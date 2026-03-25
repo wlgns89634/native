@@ -1,10 +1,10 @@
-import { DarkColors, LightColors } from "@/constants/colors";
+import { useColors } from "@/hooks/useColors";
 import { useThemeStore } from "@/store/useThemeStore";
 import { Switch, Text, View } from "react-native";
 
-export default function SettingsScreen() {
+export default function Settings() {
   const { isDark, toggleTheme } = useThemeStore();
-  const Colors = isDark ? DarkColors : LightColors;
+  const Colors = useColors();
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background, padding: 20 }}>

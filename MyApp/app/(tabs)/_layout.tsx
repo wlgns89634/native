@@ -15,7 +15,7 @@ export default function Layout() {
         headerTintColor: Colors.text,
       }}
     >
-      <Tabs.Screen name="index" options={{ href: null }} />
+      <Tabs.Screen name="main" options={{ title: "메인" }} />
       <Tabs.Screen name="workout" options={{ title: "운동" }} />
       <Tabs.Screen name="habit" options={{ title: "습관" }} />
       <Tabs.Screen name="stats" options={{ title: "통계" }} />

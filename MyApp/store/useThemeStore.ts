@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
@@ -8,10 +7,7 @@ interface ThemeStore {
   toggleTheme: () => void;
 }
 
-const storage =
-  Platform.OS === "web"
-    ? createJSONStorage(() => localStorage)
-    : createJSONStorage(() => AsyncStorage);
+const storage = createJSONStorage(() => AsyncStorage);
 
 export const useThemeStore = create<ThemeStore>()(
   persist(

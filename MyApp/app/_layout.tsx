@@ -1,3 +1,4 @@
+import "@/config/calendarLocale"; // 캘린더 로케일 설정 추가
 import { useThemeStore } from "@/store/useThemeStore";
 import {
   DarkTheme,
@@ -6,7 +7,6 @@ import {
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -20,7 +20,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={isDark ? "light" : "dark"} />
     </ThemeProvider>
   );
 }
