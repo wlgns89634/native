@@ -4,7 +4,7 @@ export type TodoItem = {
   name: string;
   icon: string;
   type: "habit" | "workout";
-  isCompleted: boolean;
+  is_completed: boolean; // 변경
 };
 
 // 습관 타입
@@ -12,30 +12,31 @@ export type Habit = {
   id: string;
   name: string;
   icon: string;
-  time: string; // 알림 시간 "09:00"
-  isCompleted: boolean;
-  streak: number; // 연속 달성 일수
-  createdAt: string; // 생성일 "2026-03-25"
-  lastCompletedDate: string; // 마지막 완료일
+  time: string;
+  is_completed: boolean; // 변경
+  streak: number;
+  created_at: string; // 변경
+  last_completed_date: string; // 변경
 };
 
 // 운동 종목 타입
 export type Exercise = {
   id: string;
-  name: string; // 종목명 "벤치프레스"
-  sets: number; // 세트 수
-  reps: number; // 횟수
-  weight: number; // 무게 (kg)
+  workout_id?: string; // 추가
+  name: string;
+  sets: number;
+  reps: number;
+  weight: number;
 };
 
 // 운동 루틴 타입
 export type Workout = {
   id: string;
-  name: string; // 루틴명 "가슴 루틴"
+  name: string;
   icon: string;
-  exercises: Exercise[]; // 운동 종목 목록
-  isCompleted: boolean;
-  createdAt: string;
+  exercises: Exercise[];
+  is_completed: boolean; // 변경
+  created_at?: string; // 변경
 };
 
 // 날짜별 할 일 타입

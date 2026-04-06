@@ -1,12 +1,12 @@
 import "@/config/calendarLocale";
 import { useColors } from "@/hooks/useColors";
 import { useThemeStore } from "@/store/useThemeStore";
+import { makeStyles } from "@/styles/main.style";
 import { TodoData } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
@@ -30,24 +30,40 @@ export default function Main() {
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [todos, setTodos] = useState<TodoData>({});
-  const markedDates = {};
+  const markedDates: Record<string, any> = {};
   const streakCount = 0;
 
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
+  const getMotivation = () => {
+    if (totalCount === 0)
+      return { msg: "오늘 루틴을 등록해보세요!", emoji: "📝" };
+    if (percentage === 100)
+      return { msg: "완벽해요! 오늘 모두 완료했어요", emoji: "🎉" };
+    if (percentage >= 75)
+      return { msg: "거의 다 왔어요! 조금만 더!", emoji: "💪" };
+    if (percentage >= 50)
+      return { msg: "절반 넘었어요! 잘하고 있어요", emoji: "🔥" };
+    if (percentage >= 25)
+      return { msg: "좋은 시작이에요! 계속 해봐요", emoji: "😊" };
+    return { msg: "오늘 루틴 시작해볼까요?", emoji: "🌅" };
+  };
+
+  const motivation = getMotivation();
+
   const selectedItems = todos[selectedDate] || [];
-  const completedCount = selectedItems.filter((i) => i.isCompleted).length;
+  const completedCount = selectedItems.filter((i) => i.is_completed).length;
   const totalCount = selectedItems.length;
   const percentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const habitCount = selectedItems.filter((i) => i.type === "habit").length;
   const habitDone = selectedItems.filter(
-    (i) => i.type === "habit" && i.isCompleted,
+    (i) => i.type === "habit" && i.is_completed,
   ).length;
   const workoutCount = selectedItems.filter((i) => i.type === "workout").length;
   const workoutDone = selectedItems.filter(
-    (i) => i.type === "workout" && i.isCompleted,
+    (i) => i.type === "workout" && i.is_completed,
   ).length;
 
   useEffect(() => {
@@ -62,7 +78,7 @@ export default function Main() {
     setTodos((prev) => ({
       ...prev,
       [selectedDate]: prev[selectedDate].map((item) =>
-        item.id === id ? { ...item, isCompleted: !item.isCompleted } : item,
+        item.id === id ? { ...item, is_completed: !item.is_completed } : item,
       ),
     }));
   };
@@ -92,7 +108,9 @@ export default function Main() {
       <View style={styles.calendarWrap}>
         <Calendar
           current={todayStr}
-          onDayPress={(day: any) => setSelectedDate(day.dateString)}
+          onDayPress={(day: { dateString: string }) =>
+            setSelectedDate(day.dateString)
+          }
           monthFormat={"yyyy년 MM월"}
           renderArrow={(direction: string) => (
             <Text style={{ color: Colors.primary, fontSize: 18 }}>
@@ -177,6 +195,11 @@ export default function Main() {
               ]}
             />
           </View>
+          {/* 동기부여 메세지 */}
+          <View style={styles.motivationWrap}>
+            <Text style={styles.motivationEmoji}>{motivation.emoji}</Text>
+            <Text style={styles.motivationText}>{motivation.msg}</Text>
+          </View>
           <Text style={styles.progressSub}>
             {completedCount} / {totalCount} 완료
           </Text>
@@ -212,7 +235,10 @@ export default function Main() {
               <Text style={styles.todoIcon}>{item.icon}</Text>
               <View>
                 <Text
-                  style={[styles.todoName, item.isCompleted && styles.todoDone]}
+                  style={[
+                    styles.todoName,
+                    item.is_completed && styles.todoDone,
+                  ]}
                 >
                   {item.name}
                 </Text>
@@ -243,9 +269,12 @@ export default function Main() {
               </View>
             </View>
             <View
-              style={[styles.checkbox, item.isCompleted && styles.checkboxDone]}
+              style={[
+                styles.checkbox,
+                item.is_completed && styles.checkboxDone,
+              ]}
             >
-              {item.isCompleted && <Text style={styles.checkmark}>✓</Text>}
+              {item.is_completed && <Text style={styles.checkmark}>✓</Text>}
             </View>
           </TouchableOpacity>
         ))
@@ -263,145 +292,3 @@ export default function Main() {
     </ScrollView>
   );
 }
-
-const makeStyles = (Colors: any, isDark: boolean) =>
-  StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
-    content: { padding: 20 },
-
-    // 헤더
-    header: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20,
-      marginTop: 8,
-    },
-    dateText: { fontSize: 13, color: Colors.subText, marginBottom: 4 },
-    greetingText: { fontSize: 22, fontWeight: "700", color: Colors.text },
-    streakBadge: {
-      backgroundColor: Colors.card,
-      borderRadius: 12,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    streakIcon: { fontSize: 18 },
-    streakText: {
-      fontSize: 12,
-      color: Colors.primary,
-      fontWeight: "700",
-      marginTop: 2,
-    },
-
-    // 달력
-    calendarWrap: {
-      borderRadius: 16,
-      overflow: "hidden",
-      marginBottom: 16,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-
-    // 요약 카드
-    summaryCard: {
-      backgroundColor: Colors.card,
-      borderRadius: 16,
-      padding: 18,
-      marginBottom: 20,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    summaryTop: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      marginBottom: 14,
-    },
-    summaryLabel: { fontSize: 13, color: Colors.subText, marginBottom: 4 },
-    summaryPercent: { fontSize: 28, fontWeight: "800", color: Colors.primary },
-    summaryStats: { gap: 6, alignItems: "flex-end" },
-    statItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-    statIcon: { fontSize: 13 },
-    statText: { fontSize: 13, color: Colors.subText },
-    progressBg: {
-      height: 8,
-      backgroundColor: isDark ? "#2C2C2C" : "#E0E0E0",
-      borderRadius: 4,
-      marginBottom: 8,
-      overflow: "hidden",
-    },
-    progressFill: {
-      height: "100%",
-      backgroundColor: Colors.primary,
-      borderRadius: 4,
-    },
-    progressSub: { fontSize: 12, color: Colors.subText },
-
-    // 섹션 헤더
-    sectionHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 12,
-    },
-    sectionTitle: { fontSize: 17, fontWeight: "700", color: Colors.text },
-    sectionMore: { fontSize: 13, color: Colors.primary },
-
-    // 할 일 아이템
-    todoItem: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: Colors.card,
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 8,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    todoLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
-    todoIcon: { fontSize: 22 },
-    todoName: {
-      fontSize: 15,
-      fontWeight: "500",
-      color: Colors.text,
-      marginBottom: 4,
-    },
-    todoDone: { textDecorationLine: "line-through", color: Colors.subText },
-    typeBadge: {
-      borderRadius: 4,
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      alignSelf: "flex-start",
-    },
-    typeBadgeText: { fontSize: 11, fontWeight: "600" },
-    checkbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 6,
-      borderWidth: 2,
-      borderColor: Colors.border,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    checkboxDone: {
-      backgroundColor: Colors.primary,
-      borderColor: Colors.primary,
-    },
-    checkmark: { color: "#fff", fontSize: 13, fontWeight: "700" },
-
-    // 빈 화면
-    emptyWrap: { alignItems: "center", paddingVertical: 40 },
-    emptyIcon: { fontSize: 40, marginBottom: 12 },
-    emptyText: { fontSize: 15, color: Colors.subText, marginBottom: 16 },
-    addBtn: {
-      backgroundColor: Colors.primary,
-      borderRadius: 10,
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-    },
-    addBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  });

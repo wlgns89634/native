@@ -9,7 +9,7 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 
 export const unstable_settings = {
-  anchor: "(tabs)",
+  anchor: "메뉴",
 };
 
 export default function RootLayout() {
@@ -17,8 +17,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false, // ← 모든 화면 헤더 숨김
+        }}
+      >
+        <Stack.Screen
+          name="habit-add"
+          options={{ headerShown: false }} // ← 이거 추가!
+        />
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
     </ThemeProvider>
