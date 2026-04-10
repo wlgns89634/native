@@ -17,15 +17,12 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false, // ← 모든 화면 헤더 숨김
-        }}
-      >
-        <Stack.Screen
-          name="habit-add"
-          options={{ headerShown: false }} // ← 이거 추가!
-        />
+      <Stack screenOptions={{ headerShown: false }}>
+        {/* 🔹 탭 그룹 먼저 등록 */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+
+        {/* 🔹 모달/추가 화면 */}
+        <Stack.Screen name="habit-add" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
     </ThemeProvider>

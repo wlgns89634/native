@@ -17,6 +17,7 @@ export default function Layout() {
     >
       <Tabs.Screen name="main" options={{ title: "메인" }} />
       <Tabs.Screen name="workout" options={{ title: "운동" }} />
+      <Tabs.Screen name="games" options={{ title: "게임" }} />
       <Tabs.Screen name="habit" options={{ title: "습관" }} />
       <Tabs.Screen name="stats" options={{ title: "통계" }} />
       <Tabs.Screen name="settings" options={{ title: "설정" }} />
