@@ -1,17 +1,22 @@
 import "@/config/calendarLocale";
 import { useColors } from "@/hooks/useColors";
+import * as RiotApi from "@/lib/riot";
 import { useThemeStore } from "@/store/useThemeStore";
 import { makeStyles } from "@/styles/main.style";
 import { TodoData } from "@/types";
 import { useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Animated,
+  FlatList,
+  Image,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const getDateStr = (daysAgo: number) => {
   const d = new Date();
@@ -52,18 +57,18 @@ export default function Main() {
   const motivation = getMotivation();
 
   const selectedItems = todos[selectedDate] || [];
-  const completedCount = selectedItems.filter((i) => i.is_completed).length;
+  const completedCount = selectedItems.filter((i) => i.isCompleted).length;
   const totalCount = selectedItems.length;
   const percentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const habitCount = selectedItems.filter((i) => i.type === "habit").length;
   const habitDone = selectedItems.filter(
-    (i) => i.type === "habit" && i.is_completed,
+    (i) => i.type === "habit" && i.isCompleted,
   ).length;
   const workoutCount = selectedItems.filter((i) => i.type === "workout").length;
   const workoutDone = selectedItems.filter(
-    (i) => i.type === "workout" && i.is_completed,
+    (i) => i.type === "workout" && i.isCompleted,
   ).length;
 
   useEffect(() => {
@@ -78,10 +83,78 @@ export default function Main() {
     setTodos((prev) => ({
       ...prev,
       [selectedDate]: prev[selectedDate].map((item) =>
-        item.id === id ? { ...item, is_completed: !item.is_completed } : item,
+        item.id === id ? { ...item, isCompleted: !item.isCompleted } : item,
       ),
     }));
   };
+
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    initLoad();
+  }, []);
+
+  const initLoad = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const account = await RiotApi.getPuuid();
+      console.log("account:", JSON.stringify(account));
+      console.log("account.puuid:", account?.puuid);
+      console.log("테스트");
+
+      if (!account?.puuid) throw new Error("PUUID를 가져오지 못했습니다.");
+
+      const [rankData] = await Promise.all([RiotApi.getMatches(account.puuid)]);
+
+      const soloRank =
+        rankData?.find((r: any) => r.queueType === "RANKED_SOLO_5x5") ?? null;
+
+      let matchDetails: any[] = [];
+
+      setUserData({
+        account,
+        rank: soloRank,
+        matches: matchDetails,
+      });
+    } catch (err: any) {
+      console.log("=== ❌ 에러 발생 ===");
+      if (err.response) {
+        setError(
+          `API 오류 (${err.response.status}): ${err.response.config?.url}`,
+        );
+      } else {
+        setError(err.message ?? "알 수 없는 오류가 발생했습니다.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#00BFFF" />
+        <Text style={{ color: "#777", marginTop: 12 }}>
+          데이터 불러오는 중...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error || !userData) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.errorText}>{error ?? "데이터 없음"}</Text>
+        <TouchableOpacity onPress={initLoad} style={styles.retryBtn}>
+          <Text style={{ color: "#00BFFF" }}>다시 시도하기</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -235,10 +308,7 @@ export default function Main() {
               <Text style={styles.todoIcon}>{item.icon}</Text>
               <View>
                 <Text
-                  style={[
-                    styles.todoName,
-                    item.is_completed && styles.todoDone,
-                  ]}
+                  style={[styles.todoName, item.isCompleted && styles.todoDone]}
                 >
                   {item.name}
                 </Text>
@@ -269,12 +339,9 @@ export default function Main() {
               </View>
             </View>
             <View
-              style={[
-                styles.checkbox,
-                item.is_completed && styles.checkboxDone,
-              ]}
+              style={[styles.checkbox, item.isCompleted && styles.checkboxDone]}
             >
-              {item.is_completed && <Text style={styles.checkmark}>✓</Text>}
+              {item.isCompleted && <Text style={styles.checkmark}>✓</Text>}
             </View>
           </TouchableOpacity>
         ))
@@ -289,6 +356,81 @@ export default function Main() {
       )}
 
       <View style={{ height: 30 }} />
+
+      <SafeAreaView style={styles.container}>
+        <View style={styles.profileCard}>
+          <Image
+            source={{
+              uri: `https://ddragon.leagueoflegends.com/cdn/14.6.1/img/profileicon/${userData.summoner}.png`,
+            }}
+            style={styles.avatar}
+          />
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>
+              {userData.account.gameName} #{userData.account.tagLine}
+            </Text>
+            <Text style={styles.tier}>
+              {userData.rank
+                ? `${userData.rank.tier} ${userData.rank.rank} · ${userData.rank.leaguePoints}LP`
+                : "Unranked"}
+            </Text>
+            <Text style={styles.level}>Lv. {userData.summoner}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.subTitle}>최근 {userData.matches.length}경기</Text>
+
+        {userData.matches.length === 0 ? (
+          <Text style={{ color: "#777", textAlign: "center", marginTop: 20 }}>
+            최근 경기 기록이 없습니다.
+          </Text>
+        ) : (
+          <FlatList
+            data={userData.matches}
+            keyExtractor={(item) => item.metadata.matchId}
+            renderItem={({ item }) => {
+              const me = item.info.participants.find(
+                (p: any) => p.puuid === userData.account.puuid,
+              );
+              const win = me?.win;
+              return (
+                <View
+                  style={[
+                    styles.matchCard,
+                    {
+                      borderLeftColor: win ? "#1a9e5c" : "#c0392b",
+                      borderLeftWidth: 4,
+                    },
+                  ]}
+                >
+                  <View>
+                    <Text style={styles.matchMode}>{item.info.gameMode}</Text>
+                    <Text style={{ color: "#aaa", fontSize: 12, marginTop: 3 }}>
+                      {me?.championName ?? ""}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text
+                      style={[
+                        styles.matchStatus,
+                        {
+                          color: win ? "#1a9e5c" : "#c0392b",
+                          fontWeight: "bold",
+                        },
+                      ]}
+                    >
+                      {win ? "승리" : "패배"}
+                    </Text>
+                    <Text style={{ color: "#aaa", fontSize: 12, marginTop: 3 }}>
+                      {me ? `${me.kills}/${me.deaths}/${me.assists}` : ""}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }}
+          />
+        )}
+      </SafeAreaView>
     </ScrollView>
   );
 }

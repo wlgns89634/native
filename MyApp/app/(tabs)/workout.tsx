@@ -31,7 +31,7 @@ export default function WorkoutScreen() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const completedCount = workouts.filter(
-    (w: { is_completed: boolean }) => w.is_completed,
+    (w: { isCompleted: boolean }) => w.isCompleted,
   ).length;
   const totalCount = workouts.length;
 
@@ -114,7 +114,7 @@ export default function WorkoutScreen() {
                   <View
                     style={[
                       styles.iconWrap,
-                      workout.is_completed && styles.iconWrapDone,
+                      workout.isCompleted && styles.iconWrapDone,
                     ]}
                   >
                     <Text style={styles.workoutIcon}>{workout.icon}</Text>
@@ -123,7 +123,7 @@ export default function WorkoutScreen() {
                     <Text
                       style={[
                         styles.workoutName,
-                        workout.is_completed && styles.workoutNameDone,
+                        workout.isCompleted && styles.workoutNameDone,
                       ]}
                     >
                       {workout.name}
@@ -145,11 +145,11 @@ export default function WorkoutScreen() {
                   <TouchableOpacity
                     style={[
                       styles.checkbox,
-                      workout.is_completed && styles.checkboxDone,
+                      workout.isCompleted && styles.checkboxDone,
                     ]}
                     onPress={() => toggleComplete(workout.id)}
                   >
-                    {workout.is_completed && (
+                    {workout.isCompleted && (
                       <Text style={styles.checkmark}>✓</Text>
                     )}
                   </TouchableOpacity>

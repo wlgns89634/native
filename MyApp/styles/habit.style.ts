@@ -180,11 +180,35 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       shadowOpacity: 0.4,
       shadowRadius: 8,
       elevation: 8,
+      zIndex: 999,
     },
     fabText: {
       color: "#fff",
       fontSize: 28,
       fontWeight: "300",
       lineHeight: 32,
+    },
+
+    deleteAction: {
+      backgroundColor: Colors.error || "#FF5252", // 실패/에러용 레드 색상
+      justifyContent: "center",
+      alignItems: "center",
+      width: 80,
+      // 중요: 카드와 동일한 높이와 여백을 가져야 일체감이 생깁니다.
+      height: 80, // habitCard의 높이가 고정이라면 그 값에 맞추세요
+      borderRadius: 12, // habitCard와 동일한 곡률
+      marginBottom: 12, // habitCard 사이의 간격과 동일하게 설정
+      marginLeft: 10, // 카드와 삭제 버튼 사이의 미세한 간격
+    },
+
+    deleteText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+
+    // Swipeable 컨테이너가 잘리지 않게 하려면 추가
+    swipeContainer: {
+      overflow: "visible",
     },
   });

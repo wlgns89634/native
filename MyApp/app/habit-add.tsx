@@ -72,10 +72,9 @@ export default function HabitAddScreen() {
       name: name.trim(),
       icon: selectedIcon,
       time: selectedTime,
-      is_completed: false,
+      isCompleted: false,
       streak: 0,
-      created_at: "",
-      last_completed_date: "",
+      completedDate: "",
     });
 
     router.back();
@@ -171,7 +170,7 @@ export default function HabitAddScreen() {
 
 const makeStyles = (Colors: any, isDark: boolean) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
+    container: { flex: 1, backgroundColor: Colors.background, zIndex: 99999 },
 
     // 헤더
     header: {

@@ -19,23 +19,29 @@ interface AllStore {
   ) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   toggleWorkout: (id: string, current: boolean) => Promise<void>;
+  isLoading: boolean;
 }
 
 export const useAllStore = create<AllStore>((set) => ({
   habits: [],
+  isLoading: false,
 
   // 습관 불러오기
   fetchHabits: async () => {
-    const { data, error } = await supabase
-      .from("habits")
-      .select("*")
-      .order("created_at", { ascending: true });
+    set({ isLoading: true });
 
-    if (error) {
+    try {
+      const { data } = await supabase
+        .from("habits")
+        .select("*")
+        .order("createdAt", { ascending: true });
+      set({ habits: data || [] });
+    } catch (error) {
       console.error(error);
       return;
+    } finally {
+      set({ isLoading: false });
     }
-    set({ habits: data || [] });
   },
 
   // 습관 추가
@@ -47,7 +53,7 @@ export const useAllStore = create<AllStore>((set) => ({
           name: habit.name,
           icon: habit.icon,
           time: habit.time,
-          is_completed: false,
+          isCompleted: false,
           streak: 0,
         },
       ])
@@ -75,7 +81,7 @@ export const useAllStore = create<AllStore>((set) => ({
   toggleHabit: async (id, current) => {
     const { error } = await supabase
       .from("habits")
-      .update({ is_completed: !current })
+      .update({ isCompleted: !current })
       .eq("id", id);
 
     if (error) {
@@ -84,7 +90,7 @@ export const useAllStore = create<AllStore>((set) => ({
     }
     set((state) => ({
       habits: state.habits.map((h) =>
-        h.id === id ? { ...h, is_completed: !current } : h,
+        h.id === id ? { ...h, isCompleted: !current } : h,
       ),
     }));
   },
@@ -95,7 +101,7 @@ export const useAllStore = create<AllStore>((set) => ({
     const { data, error } = await supabase
       .from("workouts")
       .select(`*, exercises(*)`)
-      .order("created_at", { ascending: true });
+      .order("createdAt", { ascending: true });
 
     if (error) {
       console.error(error);
@@ -112,7 +118,7 @@ export const useAllStore = create<AllStore>((set) => ({
         {
           name: workout.name,
           icon: workout.icon,
-          is_completed: false,
+          isCompleted: false,
         },
       ])
       .select();
@@ -162,7 +168,7 @@ export const useAllStore = create<AllStore>((set) => ({
   toggleWorkout: async (id, current) => {
     const { error } = await supabase
       .from("workouts")
-      .update({ is_completed: !current })
+      .update({ isCompleted: !current })
       .eq("id", id);
 
     if (error) {
@@ -171,7 +177,7 @@ export const useAllStore = create<AllStore>((set) => ({
     }
     set((state) => ({
       workouts: state.workouts.map((w) =>
-        w.id === id ? { ...w, is_completed: !current } : w,
+        w.id === id ? { ...w, isCompleted: !current } : w,
       ),
     }));
   },

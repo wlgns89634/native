@@ -2,6 +2,7 @@ import { useColors } from "@/hooks/useColors";
 import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { Exercise } from "@/types";
+
 import { router } from "expo-router";
 import { useState } from "react";
 import {
@@ -77,22 +78,25 @@ export default function WorkAddScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) return;
-    const validExercises = exercises.filter((e) => e.name.trim());
 
-    if (validExercises.length === 0) return;
+    const exercises = [
+      { name: "스쿼트", sets: 3, reps: 10, weight: 50 },
+      { name: "푸쉬업", sets: 3, reps: 15, weight: 0 },
+    ];
 
     await addWorkout(
       {
         name: name.trim(),
-        exercises: validExercises,
         icon: selectedIcon,
-        is_completed: false,
+        isCompleted: false,
+        exercises: [],
       },
-      validExercises,
+      exercises,
     );
 
     router.back();
   };
+
   return (
     <View style={styles.container}>
       {/* 헤더 */}

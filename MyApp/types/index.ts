@@ -4,7 +4,7 @@ export type TodoItem = {
   name: string;
   icon: string;
   type: "habit" | "workout";
-  is_completed: boolean; // 변경
+  isCompleted: boolean; // 변경
 };
 
 // 습관 타입
@@ -13,10 +13,10 @@ export type Habit = {
   name: string;
   icon: string;
   time: string;
-  is_completed: boolean; // 변경
+  isCompleted: boolean; // 변경
   streak: number;
-  created_at: string; // 변경
-  last_completed_date: string; // 변경
+  createdAt: string; // 변경
+  completedDate: string; // 변경
 };
 
 // 운동 종목 타입
@@ -35,8 +35,8 @@ export type Workout = {
   name: string;
   icon: string;
   exercises: Exercise[];
-  is_completed: boolean; // 변경
-  created_at?: string; // 변경
+  isCompleted: boolean; // 변경
+  createdAt?: string; // 변경
 };
 
 // 날짜별 할 일 타입
