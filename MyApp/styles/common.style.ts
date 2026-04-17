@@ -69,8 +69,8 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       textAlign: "right",
     },
 
-    // 습관 카드
-    habitCard: {
+    // 공통 카드
+    commonCard: {
       flexDirection: "row",
       justifyContent: "space-between",
       alignItems: "center",
@@ -189,26 +189,107 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       lineHeight: 32,
     },
 
+    // 삭제 액션
     deleteAction: {
-      backgroundColor: Colors.error || "#FF5252", // 실패/에러용 레드 색상
+      backgroundColor: Colors.error || "#FF5252",
       justifyContent: "center",
       alignItems: "center",
       width: 80,
-      // 중요: 카드와 동일한 높이와 여백을 가져야 일체감이 생깁니다.
-      height: 80, // habitCard의 높이가 고정이라면 그 값에 맞추세요
-      borderRadius: 12, // habitCard와 동일한 곡률
-      marginBottom: 12, // habitCard 사이의 간격과 동일하게 설정
-      marginLeft: 10, // 카드와 삭제 버튼 사이의 미세한 간격
+      height: 80,
+      borderRadius: 12,
+      marginBottom: 12,
+      marginLeft: 10,
     },
-
     deleteText: {
       color: "#FFFFFF",
       fontSize: 14,
       fontWeight: "600",
     },
-
-    // Swipeable 컨테이너가 잘리지 않게 하려면 추가
     swipeContainer: {
       overflow: "visible",
+    },
+
+    // ── 운동(Workout) 전용 ──────────────────────────
+
+    // 루틴 카드
+    workoutCard: {
+      backgroundColor: Colors.card,
+      borderRadius: 14,
+      marginBottom: 12,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      overflow: "hidden",
+    },
+    workoutHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: 16,
+    },
+    workoutLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
+      flex: 1,
+    },
+    workoutIcon: { fontSize: 22 },
+    workoutName: {
+      fontSize: 16,
+      fontWeight: "600",
+      color: Colors.text,
+      marginBottom: 4,
+    },
+    workoutNameDone: {
+      textDecorationLine: "line-through",
+      color: Colors.subText,
+    },
+    workoutMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    metaText: { fontSize: 12, color: Colors.subText },
+    metaDot: { fontSize: 12, color: Colors.border },
+    workoutRight: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    expandIcon: { fontSize: 10, color: Colors.subText },
+
+    // 종목 리스트
+    exerciseList: { paddingHorizontal: 16, paddingBottom: 16 },
+    exerciseDivider: {
+      height: 1,
+      backgroundColor: Colors.border,
+      marginBottom: 12,
+    },
+    tableHeader: {
+      flexDirection: "row",
+      marginBottom: 8,
+    },
+    tableHeaderText: {
+      flex: 1,
+      fontSize: 12,
+      fontWeight: "700",
+      color: Colors.subText,
+      textAlign: "center",
+    },
+    exerciseRow: {
+      flexDirection: "row",
+      paddingVertical: 8,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+    },
+    exerciseName: {
+      fontSize: 14,
+      color: Colors.text,
+      fontWeight: "500",
+    },
+    exerciseValue: {
+      flex: 1,
+      fontSize: 14,
+      color: Colors.subText,
+      textAlign: "center",
     },
   });

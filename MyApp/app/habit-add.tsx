@@ -5,6 +5,7 @@ import { useThemeStore } from "@/store/useThemeStore";
 import { router } from "expo-router";
 import { useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -66,18 +67,35 @@ export default function HabitAddScreen() {
   const { addHabit } = useAllStore();
 
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      Alert.alert("입력 오류", "습관 이름을 입력해주세요.");
+      return;
+    }
 
-    await addHabit({
-      name: name.trim(),
-      icon: selectedIcon,
-      time: selectedTime,
-      isCompleted: false,
-      streak: 0,
-      completedDate: "",
-    });
+    Alert.alert("습관 저장", "새로운 습관을 등록하시겠습니까?", [
+      { text: "취소", style: "cancel" },
+      {
+        text: "저장",
+        onPress: async () => {
+          try {
+            // 실제 저장 로직 실행
+            await addHabit({
+              name: name.trim(),
+              icon: selectedIcon,
+              time: selectedTime,
+              isCompleted: false,
+              streak: 0,
+              completedDate: "",
+            });
 
-    router.back();
+            router.back();
+          } catch (error) {
+            console.error(error);
+            Alert.alert("저장 오류", "습관을 저장하는 중 오류가 발생했습니다.");
+          }
+        },
+      },
+    ]);
   };
 
   return (

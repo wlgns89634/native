@@ -34,6 +34,16 @@ const ICONS = [
   "❤️",
 ];
 
+const DAYS = [
+  { label: "월", value: 1 },
+  { label: "화", value: 2 },
+  { label: "수", value: 3 },
+  { label: "목", value: 4 },
+  { label: "금", value: 5 },
+  { label: "토", value: 6 },
+  { label: "일", value: 0 },
+];
+
 // 시간 선택 목록
 const TIMES = [
   "06:00",
@@ -73,28 +83,25 @@ export default function WorkAddScreen() {
   const [name, setName] = useState("");
   const [selectedTime, setSelectedTime] = useState("09:00");
 
+  const [selectedDay, setSelectedDay] = useState(new Date().getDay());
+
   const { addWorkout } = useAllStore();
-  const [exercises, setExercises] = useState<Exercise[]>([createExercise()]);
 
   const handleSave = async () => {
     if (!name.trim()) return;
 
-    const exercises = [
-      { name: "스쿼트", sets: 3, reps: 10, weight: 50 },
-      { name: "푸쉬업", sets: 3, reps: 15, weight: 0 },
-    ];
+    await addWorkout({
+      name: name.trim(),
+      icon: selectedIcon,
+      isCompleted: false,
+      day: selectedDay,
+    });
 
-    await addWorkout(
-      {
-        name: name.trim(),
-        icon: selectedIcon,
-        isCompleted: false,
-        exercises: [],
-      },
-      exercises,
-    );
-
-    router.back();
+    setTimeout(() => {
+      if (router.canGoBack()) {
+        router.back();
+      }
+    }, 100);
   };
 
   return (
@@ -104,7 +111,7 @@ export default function WorkAddScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>습관 추가</Text>
+        <Text style={styles.headerTitle}>운동 추가</Text>
         <TouchableOpacity
           onPress={handleSave}
           style={[styles.saveBtn, !name.trim() && styles.saveBtnDisabled]}
@@ -121,7 +128,7 @@ export default function WorkAddScreen() {
         <View style={styles.previewWrap}>
           <View style={styles.previewCard}>
             <Text style={styles.previewIcon}>{selectedIcon}</Text>
-            <Text style={styles.previewName}>{name || "습관 이름"}</Text>
+            <Text style={styles.previewName}>{name || "운동 이름"}</Text>
             <Text style={styles.previewTime}>⏰ {selectedTime}</Text>
           </View>
         </View>
@@ -139,6 +146,29 @@ export default function WorkAddScreen() {
               onPress={() => setSelectedIcon(icon)}
             >
               <Text style={styles.iconText}>{icon}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={styles.sectionTitle}>운동 요일</Text>
+        <View style={styles.dayGrid}>
+          {DAYS.map((day) => (
+            <TouchableOpacity
+              key={day.value}
+              style={[
+                styles.dayItem,
+                selectedDay === day.value && styles.dayItemSelected,
+              ]}
+              onPress={() => setSelectedDay(day.value)}
+            >
+              <Text
+                style={[
+                  styles.dayText,
+                  selectedDay === day.value && styles.dayTextSelected,
+                ]}
+              >
+                {day.label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -305,4 +335,40 @@ const makeStyles = (Colors: any, isDark: boolean) =>
     },
     timeText: { fontSize: 13, color: Colors.subText, fontWeight: "500" },
     timeTextSelected: { color: "#fff", fontWeight: "700" },
+
+    dayGrid: {
+      flexDirection: "row",
+      justifyContent: "space-between", // 요일을 가로로 꽉 채움
+      marginBottom: 24,
+    },
+    dayItem: {
+      width: 40,
+      height: 40,
+      borderRadius: 20, // 동그란 모양
+      backgroundColor: Colors.card,
+      justifyContent: "center",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: Colors.border,
+    },
+    dayItemSelected: {
+      backgroundColor: Colors.primary,
+      borderColor: Colors.primary,
+      // 그림자 효과 (iOS)
+      shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      // 그림자 효과 (Android)
+      elevation: 4,
+    },
+    dayText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: Colors.subText,
+    },
+    dayTextSelected: {
+      color: "#ffffff",
+      fontWeight: "700",
+    },
   });

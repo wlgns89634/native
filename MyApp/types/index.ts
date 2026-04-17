@@ -34,7 +34,9 @@ export type Workout = {
   id: string;
   name: string;
   icon: string;
-  exercises: Exercise[];
+  year?: number | string;
+  week?: number | string;
+  day: number | string;
   isCompleted: boolean; // 변경
   createdAt?: string; // 변경
 };
