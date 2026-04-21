@@ -1,8 +1,9 @@
 import SkeletonItem from "@/components/Skeleton/Skeleton";
+import WorkoutHistory from "@/components/WorkoutHistory/WorkoutHistory ";
 import { useColors } from "@/hooks/useColors";
 import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
-import { makeStyles } from "@/styles/common.style";
+import { CommonStyles } from "@/styles/common.style";
 import { Exercise } from "@/types";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
@@ -25,11 +26,26 @@ const calcTime = (exercises: Exercise[]) => {
 export default function WorkoutScreen() {
   const Colors = useColors();
   const { isDark } = useThemeStore();
-  const styles = makeStyles(Colors, isDark);
+  const styles = CommonStyles(Colors, isDark);
 
-  const { workouts, fetchWorkouts, deleteWorkout, isSkeleton } = useAllStore();
+  const {
+    workouts,
+    fetchWorkouts,
+    fetchWeekHistories,
+    deleteWorkout,
+    isSkeleton,
+    toggleWorkout,
+    weekHistories, // 추가
+    fetchMoreHistories, // 추가 (더보기용)
+    hasMoreHistory, // 추가
+    isHistoryLoading, // 추가
+  } = useAllStore();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const toggleComplete = (id: string, isCompleted: boolean) => {
+    toggleWorkout(id, isCompleted);
+  };
 
   const completedCount = workouts.filter(
     (w: { isCompleted: boolean }) => w.isCompleted,
@@ -37,10 +53,6 @@ export default function WorkoutScreen() {
   const totalCount = workouts.length;
 
   const animatedWidth = useRef(new Animated.Value(0)).current;
-
-  const toggleComplete = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
-  };
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -69,6 +81,7 @@ export default function WorkoutScreen() {
 
   useEffect(() => {
     fetchWorkouts();
+    fetchWeekHistories();
   }, []);
 
   useEffect(() => {
@@ -133,7 +146,7 @@ export default function WorkoutScreen() {
                   enableTrackpadTwoFingerGesture
                   rightThreshold={40}
                 >
-                  {/* 루틴 헤더 */}
+                  {/* 루틴 헤더 (카드 전체 클릭 시 열림/닫힘) */}
                   <TouchableOpacity
                     style={styles.commonCard}
                     key={workout.id}
@@ -156,11 +169,31 @@ export default function WorkoutScreen() {
                             workout.isCompleted && styles.workoutNameDone,
                           ]}
                         >
-                          {workout.name}
-                          {workout.day}
+                          {workout.name} {workout.day}
                         </Text>
                       </View>
                     </View>
+
+                    {/* 🆕 체크박스 영역 추가 */}
+                    <TouchableOpacity
+                      style={styles.checkboxWrap}
+                      activeOpacity={0.6}
+                      onPress={() =>
+                        toggleComplete(workout.id, workout.isCompleted)
+                      }
+                      hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }} // 터치 영역 여유롭게
+                    >
+                      <View
+                        style={[
+                          styles.checkbox,
+                          workout.isCompleted && styles.checkboxDone,
+                        ]}
+                      >
+                        {workout.isCompleted && (
+                          <Text style={styles.checkmark}>✓</Text>
+                        )}
+                      </View>
+                    </TouchableOpacity>
                   </TouchableOpacity>
                 </Swipeable>
               ))
@@ -178,6 +211,7 @@ export default function WorkoutScreen() {
         )}
 
         <View style={{ height: 100 }} />
+        <WorkoutHistory />
       </ScrollView>
 
       <TouchableOpacity

@@ -114,20 +114,6 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       alignSelf: "flex-start",
     },
     typeBadgeText: { fontSize: 11, fontWeight: "600" },
-    checkbox: {
-      width: 24,
-      height: 24,
-      borderRadius: 6,
-      borderWidth: 2,
-      borderColor: Colors.border,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    checkboxDone: {
-      backgroundColor: Colors.primary,
-      borderColor: Colors.primary,
-    },
-    checkmark: { color: "#fff", fontSize: 13, fontWeight: "700" },
 
     motivationWrap: {
       flexDirection: "row",
@@ -204,5 +190,23 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       borderWidth: 1,
       borderColor: "#00BFFF",
       borderRadius: 8,
+    },
+
+    weatherWarning: {
+      backgroundColor: "#1E3A5F",
+      borderRadius: 12,
+      padding: 14,
+      marginHorizontal: 16,
+      marginTop: 12,
+      flexDirection: "row",
+      alignItems: "center",
+      borderLeftWidth: 4,
+      borderLeftColor: "#4A9EFF",
+    },
+    weatherWarningText: {
+      color: "#AED6FF",
+      fontSize: 14,
+      fontWeight: "500",
+      flexShrink: 1,
     },
   });

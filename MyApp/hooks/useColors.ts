@@ -1,7 +1,7 @@
-import { DarkColors, LightColors } from "@/constants/colors";
+import { DARK_COLORS, LIGHT_COLORS } from "@/constants/common";
 import { useThemeStore } from "@/store/useThemeStore";
 
 export const useColors = () => {
   const { isDark } = useThemeStore();
-  return isDark ? DarkColors : LightColors;
+  return isDark ? DARK_COLORS : LIGHT_COLORS;
 };

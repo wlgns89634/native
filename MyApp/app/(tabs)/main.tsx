@@ -1,12 +1,20 @@
 import "@/config/calendarLocale";
+import {
+  CITY_NAMES_KR,
+  COUNTRY_NAMES,
+  DAY_NAMES,
+  getMotivation,
+  getWeatherWarning,
+} from "@/constants/common";
 import { useColors } from "@/hooks/useColors";
 import * as RiotApi from "@/lib/riot";
 import { useThemeStore } from "@/store/useThemeStore";
 import { makeStyles } from "@/styles/main.style";
 import { TodoData } from "@/types";
+import axios from "axios";
+import * as Location from "expo-location";
 import { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Animated,
   FlatList,
   Image,
@@ -18,15 +26,8 @@ import {
 import { Calendar } from "react-native-calendars";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const getDateStr = (daysAgo: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split("T")[0];
-};
-
 const today = new Date();
 const todayStr = today.toISOString().split("T")[0];
-const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
 
 export default function Main() {
   const Colors = useColors();
@@ -35,26 +36,14 @@ export default function Main() {
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [todos, setTodos] = useState<TodoData>({});
+  const [userData, setUserData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const markedDates: Record<string, any> = {};
   const streakCount = 0;
 
   const animatedWidth = useRef(new Animated.Value(0)).current;
-
-  const getMotivation = () => {
-    if (totalCount === 0)
-      return { msg: "오늘 루틴을 등록해보세요!", emoji: "📝" };
-    if (percentage === 100)
-      return { msg: "완벽해요! 오늘 모두 완료했어요", emoji: "🎉" };
-    if (percentage >= 75)
-      return { msg: "거의 다 왔어요! 조금만 더!", emoji: "💪" };
-    if (percentage >= 50)
-      return { msg: "절반 넘었어요! 잘하고 있어요", emoji: "🔥" };
-    if (percentage >= 25)
-      return { msg: "좋은 시작이에요! 계속 해봐요", emoji: "😊" };
-    return { msg: "오늘 루틴 시작해볼까요?", emoji: "🌅" };
-  };
-
-  const motivation = getMotivation();
 
   const selectedItems = todos[selectedDate] || [];
   const completedCount = selectedItems.filter((i) => i.isCompleted).length;
@@ -71,13 +60,20 @@ export default function Main() {
     (i) => i.type === "workout" && i.isCompleted,
   ).length;
 
+  const weatherWarning = getWeatherWarning(userData?.weather?.weather?.[0]?.id);
+  const motivation = getMotivation(percentage, totalCount);
+  const cityName =
+    userData?.weather?.sys?.country === "KR"
+      ? (CITY_NAMES_KR[userData.weather.name] ?? userData.weather.name)
+      : (userData?.weather?.name ?? "");
+
   useEffect(() => {
     Animated.timing(animatedWidth, {
-      toValue: percentage, // 목표값
-      duration: 300, // 0.8초
-      useNativeDriver: false, // width 애니메이션은 false
+      toValue: percentage,
+      duration: 300,
+      useNativeDriver: false,
     }).start();
-  }, [percentage]); // percentage 바뀔때마다 실행
+  }, [percentage]);
 
   const toggleTodo = (id: string) => {
     setTodos((prev) => ({
@@ -88,10 +84,6 @@ export default function Main() {
     }));
   };
 
-  const [loading, setLoading] = useState(true);
-  const [userData, setUserData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
   useEffect(() => {
     initLoad();
   }, []);
@@ -101,10 +93,20 @@ export default function Main() {
       setLoading(true);
       setError(null);
 
-      const account = await RiotApi.getPuuid();
-      console.log("account:", JSON.stringify(account));
-      console.log("account.puuid:", account?.puuid);
-      console.log("테스트");
+      const WEATHER_KEY = process.env.EXPO_PUBLIC_WEATHER_KEY;
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") throw new Error("위치 권한이 거부되었습니다.");
+
+      const position = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = position.coords;
+
+      const [weatherResponse, account] = await Promise.all([
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${WEATHER_KEY}&units=metric&lang=kr`,
+        ),
+        RiotApi.getPuuid(),
+      ]);
 
       if (!account?.puuid) throw new Error("PUUID를 가져오지 못했습니다.");
 
@@ -113,38 +115,32 @@ export default function Main() {
       const soloRank =
         rankData?.find((r: any) => r.queueType === "RANKED_SOLO_5x5") ?? null;
 
-      let matchDetails: any[] = [];
+      const matchDetails: any = [];
 
       setUserData({
         account,
         rank: soloRank,
         matches: matchDetails,
+        weather: weatherResponse.data,
       });
-    } catch (err: any) {
-      console.log("=== ❌ 에러 발생 ===");
-      if (err.response) {
-        setError(
-          `API 오류 (${err.response.status}): ${err.response.config?.url}`,
-        );
-      } else {
-        setError(err.message ?? "알 수 없는 오류가 발생했습니다.");
-      }
+    } catch (e) {
+      console.error("=== ❌ 에러 발생 ===", e);
+      setError(String(e));
     } finally {
       setLoading(false);
     }
   };
 
+  // 로딩 중
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#00BFFF" />
-        <Text style={{ color: "#777", marginTop: 12 }}>
-          데이터 불러오는 중...
-        </Text>
+        <Text style={styles.dateText}>로딩중~ 긔몰이이잉 화면 바꿀예정~</Text>
       </View>
     );
   }
 
+  // 에러 or 데이터 없음
   if (error || !userData) {
     return (
       <View style={styles.center}>
@@ -165,9 +161,31 @@ export default function Main() {
       {/* 헤더 */}
       <View style={styles.header}>
         <View>
+          {weatherWarning && (
+            <View style={styles.weatherWarning}>
+              <Text style={styles.weatherWarningText}>{weatherWarning}</Text>
+            </View>
+          )}
+          <Image
+            source={{
+              uri: `https://openweathermap.org/img/wn/${userData.weather.weather[0].icon}@2x.png`,
+            }}
+            style={{ width: 50, height: 50 }}
+          />
+          <Text style={styles.dateText}>
+            {cityName},{" "}
+            {COUNTRY_NAMES[userData.weather.sys.country] ??
+              userData.weather.sys.country}
+          </Text>
+          <Text style={styles.dateText}>
+            {userData.weather?.weather[0]?.description}
+          </Text>
+          <Text style={styles.dateText}>
+            {Math.round(userData.weather?.main?.temp)}°C
+          </Text>
           <Text style={styles.dateText}>
             {today.getMonth() + 1}월 {today.getDate()}일{" "}
-            {dayNames[today.getDay()]}요일
+            {DAY_NAMES[today.getDay()]}요일
           </Text>
           <Text style={styles.greetingText}>오늘도 루틴 지켜봐요 💪</Text>
         </View>
@@ -223,7 +241,6 @@ export default function Main() {
       {/* 요약 카드 */}
       {totalCount >= 0 && (
         <View style={styles.summaryCard}>
-          {/* 달성률 */}
           <View style={styles.summaryTop}>
             <View>
               <Text style={styles.summaryLabel}>
@@ -235,14 +252,12 @@ export default function Main() {
               <Text style={styles.summaryPercent}>{percentage}%</Text>
             </View>
             <View style={styles.summaryStats}>
-              {/* 습관 요약 */}
               <View style={styles.statItem}>
                 <Text style={styles.statIcon}>✅</Text>
                 <Text style={styles.statText}>
                   습관 {habitDone}/{habitCount}
                 </Text>
               </View>
-              {/* 운동 요약 */}
               {workoutCount > 0 && (
                 <View style={styles.statItem}>
                   <Text style={styles.statIcon}>💪</Text>
@@ -254,7 +269,6 @@ export default function Main() {
             </View>
           </View>
 
-          {/* 프로그레스바 */}
           <View style={styles.progressBg}>
             <Animated.View
               style={[
@@ -268,7 +282,6 @@ export default function Main() {
               ]}
             />
           </View>
-          {/* 동기부여 메세지 */}
           <View style={styles.motivationWrap}>
             <Text style={styles.motivationEmoji}>{motivation.emoji}</Text>
             <Text style={styles.motivationText}>{motivation.msg}</Text>
@@ -312,7 +325,6 @@ export default function Main() {
                 >
                   {item.name}
                 </Text>
-                {/* 타입 뱃지 */}
                 <View
                   style={[
                     styles.typeBadge,
@@ -338,11 +350,11 @@ export default function Main() {
                 </View>
               </View>
             </View>
-            <View
+            {/* <View
               style={[styles.checkbox, item.isCompleted && styles.checkboxDone]}
             >
               {item.isCompleted && <Text style={styles.checkmark}>✓</Text>}
-            </View>
+            </View> */}
           </TouchableOpacity>
         ))
       ) : (

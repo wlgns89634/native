@@ -1,4 +1,4 @@
-import { Colors } from "@/constants/colors";
+import { COLORS } from "@/constants/common";
 import { Tabs } from "expo-router";
 
 export default function Layout() {
@@ -6,13 +6,13 @@ export default function Layout() {
     <Tabs
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: Colors.background,
-          borderTopColor: Colors.border,
+          backgroundColor: COLORS.background,
+          borderTopColor: COLORS.border,
         },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.subText,
-        headerStyle: { backgroundColor: Colors.background },
-        headerTintColor: Colors.text,
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.subText,
+        headerStyle: { backgroundColor: COLORS.background },
+        headerTintColor: COLORS.text,
       }}
     >
       <Tabs.Screen name="main" options={{ title: "메인" }} />

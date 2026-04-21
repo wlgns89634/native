@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-export const makeStyles = (Colors: any, isDark: boolean) =>
+export const CommonStyles = (Colors: any, isDark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     content: { padding: 20 },
@@ -127,6 +127,12 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
     },
 
     // 체크박스
+    checkboxWrap: {
+      padding: 4,
+      justifyContent: "center",
+      alignItems: "center",
+      marginLeft: 10, // 카드 텍스트와 너무 붙지 않게 여유 공간
+    },
     checkbox: {
       width: 26,
       height: 26,
@@ -140,6 +146,7 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       backgroundColor: Colors.primary,
       borderColor: Colors.primary,
     },
+
     checkmark: {
       color: "#fff",
       fontSize: 14,

@@ -15,37 +15,86 @@ const getDateInfo = () => {
     target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
   }
   const week = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
-
   const day = now.getDay();
 
   return { year, week, day };
 };
 
+const getWeekInfo = (weeksAgo: number) => {
+  const now = new Date();
+  now.setDate(now.getDate() - weeksAgo * 7);
+
+  const year = now.getFullYear();
+  const target = new Date(now.valueOf());
+  const dayNr = (now.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = target.valueOf();
+  target.setMonth(0, 1);
+  if (target.getDay() !== 4) {
+    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+  }
+  const week = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
+
+  return { year, week };
+};
+
+const getWeekLabel = (year: number, week: number): string => {
+  const jan1 = new Date(year, 0, 1);
+  const firstMonday = new Date(jan1);
+  firstMonday.setDate(jan1.getDate() + ((1 - jan1.getDay() + 7) % 7));
+  const weekStart = new Date(firstMonday);
+  weekStart.setDate(firstMonday.getDate() + (week - 1) * 7);
+
+  const month = weekStart.getMonth() + 1;
+  const weekOfMonth = Math.ceil(weekStart.getDate() / 7);
+
+  return `${month}월 ${weekOfMonth}주차`;
+};
+
+export interface WeekHistory {
+  year: number;
+  week: number;
+  label: string;
+  workoutTotal: number;
+  workoutDone: number;
+  workoutRate: number;
+}
+
+const HISTORY_PAGE_SIZE = 4;
+
 interface AllStore {
-  // 습관 상태 및 액션
   habits: Habit[];
   fetchHabits: () => Promise<void>;
   addHabit: (habit: Omit<Habit, "id" | "createdAt">) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   toggleHabit: (id: string, current: boolean) => Promise<void>;
 
-  // 운동 상태 및 액션
   workouts: Workout[];
   fetchWorkouts: () => Promise<void>;
   addWorkout: (workout: Omit<Workout, "id" | "createdAt">) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
   toggleWorkout: (id: string, current: boolean) => Promise<void>;
 
-  // 공통 UI 상태
+  weekHistories: WeekHistory[];
+  fetchWeekHistories: (limit?: number) => Promise<void>;
+  fetchMoreHistories: () => Promise<void>;
+
   isSkeleton: boolean;
   isLoading: boolean;
+  isHistoryLoading: boolean;
+  hasMoreHistory: boolean;
+  historyOffset: number;
 }
 
-export const useAllStore = create<AllStore>((set) => ({
+export const useAllStore = create<AllStore>((set, get) => ({
   habits: [],
   workouts: [],
+  weekHistories: [],
   isSkeleton: false,
   isLoading: false,
+  isHistoryLoading: false,
+  hasMoreHistory: true,
+  historyOffset: 0,
 
   // --- [습관(Habit) 관련 로직] ---
 
@@ -132,7 +181,7 @@ export const useAllStore = create<AllStore>((set) => ({
         .from("workouts")
         .select(`*, exercises(*)`)
         .eq("year", year)
-        .eq("week", week) // 이번 주 데이터만 로드
+        .eq("week", week)
         .order("createdAt", { ascending: true });
 
       if (error) throw error;
@@ -149,7 +198,6 @@ export const useAllStore = create<AllStore>((set) => ({
     const { year: currentYear, week: currentWeek } = getDateInfo();
 
     try {
-      // 1. 운동 부위(Header) 먼저 추가
       const { data, error } = await supabase
         .from("workouts")
         .insert([
@@ -166,9 +214,6 @@ export const useAllStore = create<AllStore>((set) => ({
 
       if (error || !data) throw error;
 
-      const workoutId = data[0].id;
-
-      // Zustand 상태 업데이트 (화면에 즉시 반영)
       set((state) => ({
         workouts: [...state.workouts, { ...data[0] }],
       }));
@@ -181,7 +226,6 @@ export const useAllStore = create<AllStore>((set) => ({
 
   deleteWorkout: async (id) => {
     try {
-      // Supabase 설정(Cascade)에 따라 exercises는 자동 삭제되거나 따로 처리 필요
       const { error } = await supabase.from("workouts").delete().eq("id", id);
       if (error) throw error;
       set((state) => ({
@@ -207,6 +251,109 @@ export const useAllStore = create<AllStore>((set) => ({
       }));
     } catch (error) {
       console.error("운동 토글 중 오류:", error);
+    }
+  },
+
+  // --- [히스토리 관련 로직] ---
+
+  fetchWeekHistories: async (limit = HISTORY_PAGE_SIZE) => {
+    set({ isHistoryLoading: true });
+    try {
+      const histories: WeekHistory[] = [];
+
+      const weekInfos = Array.from({ length: limit }, (_, i) => ({
+        index: i,
+        ...getWeekInfo(i + 1),
+      }));
+
+      await Promise.all(
+        weekInfos.map(async ({ index, year, week }) => {
+          const { data: workouts } = await supabase
+            .from("workouts")
+            .select("isCompleted")
+            .eq("year", year)
+            .eq("week", week);
+
+          const workoutTotal = workouts?.length ?? 0;
+          const workoutDone =
+            workouts?.filter((w) => w.isCompleted).length ?? 0;
+
+          histories[index] = {
+            year,
+            week,
+            label: getWeekLabel(year, week),
+            workoutTotal,
+            workoutDone,
+            workoutRate:
+              workoutTotal > 0
+                ? Math.round((workoutDone / workoutTotal) * 100)
+                : 0,
+          };
+        }),
+      );
+
+      set({
+        weekHistories: histories.filter(Boolean),
+        historyOffset: limit,
+        hasMoreHistory: histories.filter(Boolean).length === limit,
+      });
+    } catch (error) {
+      console.error("히스토리 페칭 중 오류:", error);
+    } finally {
+      set({ isHistoryLoading: false });
+    }
+  },
+
+  fetchMoreHistories: async () => {
+    const { historyOffset, weekHistories, isHistoryLoading } = get();
+    if (isHistoryLoading) return;
+
+    set({ isHistoryLoading: true });
+    try {
+      const newHistories: WeekHistory[] = [];
+
+      const weekInfos = Array.from({ length: HISTORY_PAGE_SIZE }, (_, i) => ({
+        index: i,
+        ...getWeekInfo(historyOffset + i + 1),
+      }));
+
+      await Promise.all(
+        weekInfos.map(async ({ index, year, week }) => {
+          const { data: workouts } = await supabase
+            .from("workouts")
+            .select("isCompleted")
+            .eq("year", year)
+            .eq("week", week);
+
+          const workoutTotal = workouts?.length ?? 0;
+          const workoutDone =
+            workouts?.filter((w) => w.isCompleted).length ?? 0;
+
+          newHistories[index] = {
+            year,
+            week,
+            label: getWeekLabel(year, week),
+            workoutTotal,
+            workoutDone,
+            workoutRate:
+              workoutTotal > 0
+                ? Math.round((workoutDone / workoutTotal) * 100)
+                : 0,
+          };
+        }),
+      );
+
+      const filtered = newHistories.filter(Boolean);
+
+      set({
+        weekHistories: [...weekHistories, ...filtered],
+        historyOffset: historyOffset + HISTORY_PAGE_SIZE,
+        hasMoreHistory: filtered.length === HISTORY_PAGE_SIZE,
+      });
+    } catch (error) {
+      console.error("히스토리 추가 페칭 중 오류:", error);
+    } finally {
+      set({ isHistoryLoading: false });
     }
   },
 }));

@@ -2,7 +2,7 @@ import SkeletonItem from "@/components/Skeleton/Skeleton";
 import { useColors } from "@/hooks/useColors";
 import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
-import { makeStyles } from "@/styles/common.style";
+import { CommonStyles } from "@/styles/common.style";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -12,7 +12,7 @@ export default function HabitScreen() {
   const Colors = useColors();
 
   const { isDark } = useThemeStore();
-  const styles = makeStyles(Colors, isDark);
+  const styles = CommonStyles(Colors, isDark);
 
   const { habits, fetchHabits, toggleHabit, deleteHabit, isSkeleton } =
     useAllStore();
