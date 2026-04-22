@@ -1,3 +1,4 @@
+import JugglerLoader from "@/components/common/JugglerLoader";
 import SkeletonItem from "@/components/Skeleton/Skeleton";
 import WorkoutHistory from "@/components/WorkoutHistory/WorkoutHistory ";
 import { useColors } from "@/hooks/useColors";
@@ -7,6 +8,7 @@ import { CommonStyles } from "@/styles/common.style";
 import { Exercise } from "@/types";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+
 import Swipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 
 import {
@@ -35,10 +37,7 @@ export default function WorkoutScreen() {
     deleteWorkout,
     isSkeleton,
     toggleWorkout,
-    weekHistories, // 추가
-    fetchMoreHistories, // 추가 (더보기용)
-    hasMoreHistory, // 추가
-    isHistoryLoading, // 추가
+    isLoading,
   } = useAllStore();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -59,21 +58,31 @@ export default function WorkoutScreen() {
   };
 
   const renderRightActions = (id: string) => (
-    <TouchableOpacity
-      style={styles.deleteAction}
-      onPress={() => {
-        Alert.alert("삭제", "이 루틴을 지우시겠어요?", [
-          { text: "취소", style: "cancel" },
-          {
-            text: "삭제",
-            style: "destructive",
-            onPress: () => deleteWorkout(id),
-          },
-        ]);
-      }}
-    >
-      <Text style={styles.deleteText}>삭제</Text>
-    </TouchableOpacity>
+    <View style={styles.rightActionWrap}>
+      <TouchableOpacity
+        style={styles.editAction}
+        onPress={() =>
+          router.push({ pathname: "/workout-add", params: { id } })
+        } // id만 사용
+      >
+        <Text style={styles.editText}>수정</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteAction}
+        onPress={() => {
+          Alert.alert("삭제", "이 루틴을 지우시겠어요?", [
+            { text: "취소", style: "cancel" },
+            {
+              text: "삭제",
+              style: "destructive",
+              onPress: () => deleteWorkout(id),
+            },
+          ]);
+        }}
+      >
+        <Text style={styles.deleteText}>삭제</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const progressPercent =
@@ -95,6 +104,7 @@ export default function WorkoutScreen() {
 
   return (
     <View style={styles.container}>
+      {isLoading && <JugglerLoader />}
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

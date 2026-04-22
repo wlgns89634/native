@@ -196,16 +196,37 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       lineHeight: 32,
     },
 
-    // 삭제 액션
+    rightActionWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    // 수정 버튼
+    editAction: {
+      backgroundColor: Colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      width: 70,
+      borderRadius: 12,
+      marginRight: 6,
+      marginBottom: 10,
+      alignSelf: "stretch",
+    },
+    editText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+
+    // 삭제 버튼
     deleteAction: {
       backgroundColor: Colors.error || "#FF5252",
       justifyContent: "center",
       alignItems: "center",
-      width: 80,
-      height: 80,
+      width: 70,
       borderRadius: 12,
-      marginBottom: 12,
-      marginLeft: 10,
+      marginBottom: 10,
+      alignSelf: "stretch",
     },
     deleteText: {
       color: "#FFFFFF",

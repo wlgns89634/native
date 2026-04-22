@@ -1,33 +1,22 @@
 import { useColors } from "@/hooks/useColors";
+import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
+import { useEffect } from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BarChart } from "react-native-chart-kit";
 
 const screenWidth = Dimensions.get("window").width - 40;
 
-// 더미 데이터
-const weeklyData = {
-  labels: ["월", "화", "수", "목", "금", "토", "일"],
-  datasets: [{ data: [80, 100, 60, 40, 90, 70, 50] }],
-};
-
-const habitStats = [
-  { name: "물 2L 마시기", icon: "💧", percentage: 90, streak: 7 },
-  { name: "독서 30분", icon: "📚", percentage: 75, streak: 3 },
-  { name: "스트레칭", icon: "🧘", percentage: 85, streak: 12 },
-  { name: "일기 쓰기", icon: "✏️", percentage: 40, streak: 0 },
-];
-
-// 이번달 히트맵 데이터 (1~31일)
-const heatmapData = Array.from({ length: 31 }, (_, i) => ({
-  day: i + 1,
-  level: Math.floor(Math.random() * 4), // 0~3 (0: 없음, 3: 최고)
-}));
-
 export default function StatsScreen() {
   const Colors = useColors();
   const { isDark } = useThemeStore();
   const styles = makeStyles(Colors, isDark);
+
+  const { statsData, fetchStats, isSkeleton, habits } = useAllStore();
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   const heatmapColors = [
     isDark ? "#2C2C2C" : "#E0E0E0",
@@ -35,6 +24,19 @@ export default function StatsScreen() {
     "#6C63FF88",
     "#6C63FF",
   ];
+
+  const weeklyData = {
+    labels: ["월", "화", "수", "목", "금", "토", "일"],
+    datasets: [{ data: statsData?.weeklyRates ?? [0, 0, 0, 0, 0, 0, 0] }],
+  };
+
+  if (isSkeleton || !statsData) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.loadingText}>통계 불러오는 중...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -52,24 +54,24 @@ export default function StatsScreen() {
       <View style={styles.summaryRow}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryEmoji}>🎯</Text>
-          <Text style={styles.summaryValue}>78%</Text>
+          <Text style={styles.summaryValue}>{statsData.monthlyRate}%</Text>
           <Text style={styles.summaryLabel}>이번달{"\n"}달성률</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryEmoji}>🔥</Text>
-          <Text style={styles.summaryValue}>12일</Text>
+          <Text style={styles.summaryValue}>{statsData.bestStreak}일</Text>
           <Text style={styles.summaryLabel}>최고{"\n"}스트릭</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryEmoji}>✅</Text>
-          <Text style={styles.summaryValue}>84개</Text>
+          <Text style={styles.summaryValue}>{statsData.totalCompleted}개</Text>
           <Text style={styles.summaryLabel}>이번달{"\n"}완료</Text>
         </View>
       </View>
 
       {/* 주간 달성률 차트 */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>이번주 달성률</Text>
+        <Text style={styles.sectionTitle}>요일별 달성률</Text>
       </View>
       <View style={styles.chartCard}>
         <BarChart
@@ -106,7 +108,7 @@ export default function StatsScreen() {
       </View>
       <View style={styles.heatmapCard}>
         <View style={styles.heatmapGrid}>
-          {heatmapData.map((item) => (
+          {statsData.heatmap.map((item) => (
             <View key={item.day} style={styles.heatmapItem}>
               <View
                 style={[
@@ -118,7 +120,6 @@ export default function StatsScreen() {
             </View>
           ))}
         </View>
-        {/* 범례 */}
         <View style={styles.legendRow}>
           <Text style={styles.legendLabel}>적음</Text>
           {heatmapColors.map((color, i) => (
@@ -133,41 +134,67 @@ export default function StatsScreen() {
 
       {/* 습관별 달성률 */}
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>습관별 달성률</Text>
+        <Text style={styles.sectionTitle}>습관별 현황</Text>
       </View>
-      {habitStats.map((habit, index) => (
-        <View key={index} style={styles.habitStatCard}>
-          <View style={styles.habitStatTop}>
-            <View style={styles.habitStatLeft}>
-              <Text style={styles.habitStatIcon}>{habit.icon}</Text>
-              <Text style={styles.habitStatName}>{habit.name}</Text>
-            </View>
-            <View style={styles.habitStatRight}>
-              {habit.streak > 0 && (
-                <Text style={styles.habitStatStreak}>🔥 {habit.streak}일</Text>
-              )}
-              <Text style={styles.habitStatPercent}>{habit.percentage}%</Text>
-            </View>
-          </View>
-          {/* 달성률 바 */}
-          <View style={styles.habitProgressBg}>
-            <View
-              style={[
-                styles.habitProgressFill,
-                {
-                  width: `${habit.percentage}%`,
-                  backgroundColor:
-                    habit.percentage >= 80
-                      ? Colors.success
-                      : habit.percentage >= 50
-                        ? Colors.primary
-                        : Colors.secondary,
-                },
-              ]}
-            />
-          </View>
+      {habits.length === 0 ? (
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyText}>등록된 습관이 없어요</Text>
         </View>
-      ))}
+      ) : (
+        habits.map((habit) => (
+          <View key={habit.id} style={styles.habitStatCard}>
+            <View style={styles.habitStatTop}>
+              <View style={styles.habitStatLeft}>
+                <Text style={styles.habitStatIcon}>{habit.icon}</Text>
+                <Text style={styles.habitStatName}>{habit.name}</Text>
+              </View>
+              <View style={styles.habitStatRight}>
+                {habit.streak > 0 && (
+                  <Text style={styles.habitStatStreak}>
+                    🔥 {habit.streak}일
+                  </Text>
+                )}
+                <Text
+                  style={[
+                    styles.habitStatBadge,
+                    {
+                      backgroundColor: habit.isCompleted
+                        ? "#6C63FF22"
+                        : isDark
+                          ? "#2C2C2C"
+                          : "#F0F0F0",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.habitStatBadgeText,
+                      {
+                        color: habit.isCompleted
+                          ? Colors.primary
+                          : Colors.subText,
+                      },
+                    ]}
+                  >
+                    {habit.isCompleted ? "완료" : "미완료"}
+                  </Text>
+                </Text>
+              </View>
+            </View>
+            <View style={styles.habitProgressBg}>
+              <View
+                style={[
+                  styles.habitProgressFill,
+                  {
+                    width: habit.isCompleted ? "100%" : "0%",
+                    backgroundColor: Colors.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        ))
+      )}
 
       <View style={{ height: 30 }} />
     </ScrollView>
@@ -178,8 +205,8 @@ const makeStyles = (Colors: any, isDark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     content: { padding: 20 },
-
-    // 헤더
+    center: { flex: 1, alignItems: "center", justifyContent: "center" },
+    loadingText: { fontSize: 14, color: Colors.subText },
     header: { marginBottom: 20, marginTop: 8 },
     headerTitle: {
       fontSize: 28,
@@ -188,13 +215,7 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       marginBottom: 4,
     },
     headerSub: { fontSize: 14, color: Colors.subText },
-
-    // 요약 카드
-    summaryRow: {
-      flexDirection: "row",
-      gap: 10,
-      marginBottom: 24,
-    },
+    summaryRow: { flexDirection: "row", gap: 10, marginBottom: 24 },
     summaryCard: {
       flex: 1,
       backgroundColor: Colors.card,
@@ -217,26 +238,16 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       textAlign: "center",
       lineHeight: 16,
     },
-
-    // 섹션 헤더
     sectionHeader: { marginBottom: 12 },
-    sectionTitle: {
-      fontSize: 17,
-      fontWeight: "700",
-      color: Colors.text,
-    },
-
-    // 차트 카드
+    sectionTitle: { fontSize: 17, fontWeight: "700", color: Colors.text },
     chartCard: {
       backgroundColor: Colors.card,
       borderRadius: 16,
       padding: 8,
       marginBottom: 24,
-      borderWidth: 2,
+      borderWidth: 1,
       borderColor: Colors.border,
     },
-
-    // 히트맵
     heatmapCard: {
       backgroundColor: Colors.card,
       borderRadius: 16,
@@ -252,11 +263,7 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       marginBottom: 12,
     },
     heatmapItem: { alignItems: "center", gap: 2 },
-    heatmapDot: {
-      width: 28,
-      height: 28,
-      borderRadius: 6,
-    },
+    heatmapDot: { width: 28, height: 28, borderRadius: 6 },
     heatmapDay: { fontSize: 9, color: Colors.subText },
     legendRow: {
       flexDirection: "row",
@@ -266,8 +273,6 @@ const makeStyles = (Colors: any, isDark: boolean) =>
     },
     legendDot: { width: 14, height: 14, borderRadius: 3 },
     legendLabel: { fontSize: 11, color: Colors.subText },
-
-    // 습관별 달성률
     habitStatCard: {
       backgroundColor: Colors.card,
       borderRadius: 12,
@@ -282,40 +287,24 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       alignItems: "center",
       marginBottom: 10,
     },
-    habitStatLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 10,
-    },
+    habitStatLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
     habitStatIcon: { fontSize: 20 },
-    habitStatName: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: Colors.text,
+    habitStatName: { fontSize: 14, fontWeight: "600", color: Colors.text },
+    habitStatRight: { flexDirection: "row", alignItems: "center", gap: 8 },
+    habitStatStreak: { fontSize: 12, color: Colors.primary, fontWeight: "600" },
+    habitStatBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
     },
-    habitStatRight: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-    },
-    habitStatStreak: {
-      fontSize: 12,
-      color: Colors.primary,
-      fontWeight: "600",
-    },
-    habitStatPercent: {
-      fontSize: 14,
-      fontWeight: "700",
-      color: Colors.text,
-    },
+    habitStatBadgeText: { fontSize: 12, fontWeight: "600" },
     habitProgressBg: {
       height: 6,
       backgroundColor: isDark ? "#2C2C2C" : "#E0E0E0",
       borderRadius: 3,
       overflow: "hidden",
     },
-    habitProgressFill: {
-      height: "100%",
-      borderRadius: 3,
-    },
+    habitProgressFill: { height: "100%", borderRadius: 3 },
+    emptyWrap: { alignItems: "center", padding: 32 },
+    emptyText: { fontSize: 14, color: Colors.subText },
   });

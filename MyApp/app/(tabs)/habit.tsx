@@ -1,4 +1,6 @@
 import SkeletonItem from "@/components/Skeleton/Skeleton";
+import JugglerLoader from "@/components/common/JugglerLoader";
+
 import { useColors } from "@/hooks/useColors";
 import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
@@ -14,8 +16,14 @@ export default function HabitScreen() {
   const { isDark } = useThemeStore();
   const styles = CommonStyles(Colors, isDark);
 
-  const { habits, fetchHabits, toggleHabit, deleteHabit, isSkeleton } =
-    useAllStore();
+  const {
+    habits,
+    fetchHabits,
+    toggleHabit,
+    deleteHabit,
+    isSkeleton,
+    isLoading,
+  } = useAllStore();
 
   useEffect(() => {
     fetchHabits();
@@ -24,25 +32,34 @@ export default function HabitScreen() {
   const totalCount = habits.length;
 
   const renderRightActions = (id: string) => (
-    <TouchableOpacity
-      style={styles.deleteAction}
-      onPress={() => {
-        Alert.alert("삭제", "이 습관을 지우시겠어요?", [
-          { text: "취소", style: "cancel" },
-          {
-            text: "삭제",
-            style: "destructive",
-            onPress: () => deleteHabit(id),
-          },
-        ]);
-      }}
-    >
-      <Text style={styles.deleteText}>삭제</Text>
-    </TouchableOpacity>
+    <View style={styles.rightActionWrap}>
+      <TouchableOpacity
+        style={styles.editAction}
+        onPress={() => router.push({ pathname: "/habit-add", params: { id } })} // id만 사용
+      >
+        <Text style={styles.editText}>수정</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.deleteAction}
+        onPress={() => {
+          Alert.alert("삭제", "이 습관을 지우시겠어요?", [
+            { text: "취소", style: "cancel" },
+            {
+              text: "삭제",
+              style: "destructive",
+              onPress: () => deleteHabit(id),
+            },
+          ]);
+        }}
+      >
+        <Text style={styles.deleteText}>삭제</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   return (
     <View style={styles.container}>
+      {isLoading && <JugglerLoader />}
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}

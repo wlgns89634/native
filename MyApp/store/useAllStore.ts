@@ -60,6 +60,22 @@ export interface WeekHistory {
   workoutRate: number;
 }
 
+export interface StatsData {
+  weeklyRates: number[];
+  monthlyRate: number;
+  totalCompleted: number;
+  bestStreak: number;
+  heatmap: { day: number; level: number }[];
+}
+
+export interface Todo {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  createdAt: string;
+}
+
 const HISTORY_PAGE_SIZE = 4;
 
 interface AllStore {
@@ -67,17 +83,38 @@ interface AllStore {
   fetchHabits: () => Promise<void>;
   addHabit: (habit: Omit<Habit, "id" | "createdAt">) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
+  updateHabit: (
+    id: string,
+    updates: Partial<Omit<Habit, "id" | "createdAt">>,
+  ) => Promise<void>;
   toggleHabit: (id: string, current: boolean) => Promise<void>;
 
   workouts: Workout[];
   fetchWorkouts: () => Promise<void>;
   addWorkout: (workout: Omit<Workout, "id" | "createdAt">) => Promise<void>;
   deleteWorkout: (id: string) => Promise<void>;
+  updateWorkout: (
+    id: string,
+    updates: Partial<Omit<Workout, "id" | "createdAt">>,
+  ) => Promise<void>;
   toggleWorkout: (id: string, current: boolean) => Promise<void>;
+
+  todos: Todo[];
+  fetchTodos: (date: string) => Promise<void>;
+  addTodo: (todo: Omit<Todo, "id" | "createdAt">) => Promise<void>;
+  deleteTodo: (id: string) => Promise<void>;
+  updateTodo: (
+    id: string,
+    updates: Partial<Omit<Todo, "id" | "createdAt">>,
+  ) => Promise<void>;
+  isTodoLoading: boolean;
 
   weekHistories: WeekHistory[];
   fetchWeekHistories: (limit?: number) => Promise<void>;
   fetchMoreHistories: () => Promise<void>;
+
+  statsData: StatsData | null;
+  fetchStats: () => Promise<void>;
 
   isSkeleton: boolean;
   isLoading: boolean;
@@ -90,6 +127,7 @@ export const useAllStore = create<AllStore>((set, get) => ({
   habits: [],
   workouts: [],
   weekHistories: [],
+  statsData: null,
   isSkeleton: false,
   isLoading: false,
   isHistoryLoading: false,
@@ -143,12 +181,39 @@ export const useAllStore = create<AllStore>((set, get) => ({
   },
 
   deleteHabit: async (id) => {
+    set({ isLoading: true });
     try {
       const { error } = await supabase.from("habits").delete().eq("id", id);
       if (error) throw error;
       set((state) => ({ habits: state.habits.filter((h) => h.id !== id) }));
     } catch (error) {
       console.error("습관 삭제 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updateHabit: async (id, updates) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from("habits")
+        .update(updates)
+        .eq("id", id)
+        .select();
+
+      if (error) throw error;
+      if (data) {
+        set((state) => ({
+          habits: state.habits.map((h) =>
+            h.id === id ? { ...h, ...data[0] } : h,
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error("습관 수정 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -225,6 +290,7 @@ export const useAllStore = create<AllStore>((set, get) => ({
   },
 
   deleteWorkout: async (id) => {
+    set({ isLoading: true });
     try {
       const { error } = await supabase.from("workouts").delete().eq("id", id);
       if (error) throw error;
@@ -233,6 +299,32 @@ export const useAllStore = create<AllStore>((set, get) => ({
       }));
     } catch (error) {
       console.error("운동 삭제 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updateWorkout: async (id, updates) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from("workouts")
+        .update(updates)
+        .eq("id", id)
+        .select();
+
+      if (error) throw error;
+      if (data) {
+        set((state) => ({
+          workouts: state.workouts.map((w) =>
+            w.id === id ? { ...w, ...data[0] } : w,
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error("운동 수정 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -251,6 +343,89 @@ export const useAllStore = create<AllStore>((set, get) => ({
       }));
     } catch (error) {
       console.error("운동 토글 중 오류:", error);
+    }
+  },
+
+  todos: [],
+  isTodoLoading: false,
+
+  fetchTodos: async (date) => {
+    set({ isTodoLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from("todos")
+        .select("*")
+        .eq("date", date)
+        .order("createdAt", { ascending: true });
+
+      if (error) throw error;
+      set({ todos: data || [] });
+    } catch (error) {
+      console.error("일정 페칭 중 오류:", error);
+    } finally {
+      set({ isTodoLoading: false });
+    }
+  },
+
+  addTodo: async (todo) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from("todos")
+        .insert([
+          {
+            title: todo.title,
+            date: todo.date,
+            time: todo.time,
+          },
+        ])
+        .select();
+
+      if (error) throw error;
+      if (data) {
+        set((state) => ({ todos: [...state.todos, data[0]] }));
+      }
+    } catch (error) {
+      console.error("일정 추가 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteTodo: async (id) => {
+    set({ isLoading: true });
+    try {
+      const { error } = await supabase.from("todos").delete().eq("id", id);
+      if (error) throw error;
+      set((state) => ({ todos: state.todos.filter((t) => t.id !== id) }));
+    } catch (error) {
+      console.error("일정 삭제 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updateTodo: async (id, updates) => {
+    set({ isLoading: true });
+    try {
+      const { data, error } = await supabase
+        .from("todos")
+        .update(updates)
+        .eq("id", id)
+        .select();
+
+      if (error) throw error;
+      if (data) {
+        set((state) => ({
+          todos: state.todos.map((t) =>
+            t.id === id ? { ...t, ...data[0] } : t,
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error("일정 수정 중 오류:", error);
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -354,6 +529,80 @@ export const useAllStore = create<AllStore>((set, get) => ({
       console.error("히스토리 추가 페칭 중 오류:", error);
     } finally {
       set({ isHistoryLoading: false });
+    }
+  },
+
+  // --- [통계 관련 로직] ---
+
+  fetchStats: async () => {
+    set({ isSkeleton: true });
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+
+      const firstDay = new Date(year, month, 1).toISOString();
+      const lastDay = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+
+      // 이번달 운동 + 습관 병렬 조회
+      const [workoutRes, habitRes] = await Promise.all([
+        supabase
+          .from("workouts")
+          .select("isCompleted, day, createdAt")
+          .gte("createdAt", firstDay)
+          .lte("createdAt", lastDay),
+        supabase.from("habits").select("isCompleted, streak"),
+      ]);
+
+      const workouts = workoutRes.data || [];
+      const habitList = habitRes.data || [];
+
+      // 이번달 달성률
+      const totalCount = workouts.length;
+      const doneCount = workouts.filter((w) => w.isCompleted).length;
+      const monthlyRate =
+        totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
+
+      // 요일별 달성률 (월~일 순서: 1,2,3,4,5,6,0)
+      const weeklyRates = [1, 2, 3, 4, 5, 6, 0].map((dayIndex) => {
+        const dayWorkouts = workouts.filter((w) => w.day === dayIndex);
+        if (dayWorkouts.length === 0) return 0;
+        const done = dayWorkouts.filter((w) => w.isCompleted).length;
+        return Math.round((done / dayWorkouts.length) * 100);
+      });
+
+      // 최고 스트릭
+      const bestStreak = habitList.reduce(
+        (max, h) => Math.max(max, h.streak || 0),
+        0,
+      );
+
+      // 이번달 히트맵
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const heatmap = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
+        const dayWorkouts = workouts.filter((w) => {
+          const d = new Date(w.createdAt);
+          return d.getDate() === day;
+        });
+        const done = dayWorkouts.filter((w) => w.isCompleted).length;
+        const level = done === 0 ? 0 : done <= 1 ? 1 : done <= 3 ? 2 : 3;
+        return { day, level };
+      });
+
+      set({
+        statsData: {
+          weeklyRates,
+          monthlyRate,
+          totalCompleted: doneCount,
+          bestStreak,
+          heatmap,
+        },
+      });
+    } catch (error) {
+      console.error("통계 페칭 중 오류:", error);
+    } finally {
+      set({ isSkeleton: false });
     }
   },
 }));

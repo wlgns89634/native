@@ -8,12 +8,14 @@ import {
 } from "@/constants/common";
 import { useColors } from "@/hooks/useColors";
 import * as RiotApi from "@/lib/riot";
+import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { makeStyles } from "@/styles/main.style";
-import { TodoData } from "@/types";
 import axios from "axios";
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
+
 import {
   Animated,
   FlatList,
@@ -35,10 +37,10 @@ export default function Main() {
   const styles = makeStyles(Colors, isDark);
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
-  const [todos, setTodos] = useState<TodoData>({});
   const [userData, setUserData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { todos, fetchTodos, isLoading } = useAllStore();
 
   const markedDates: Record<string, any> = {};
   const streakCount = 0;
@@ -51,10 +53,6 @@ export default function Main() {
   const percentage =
     totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const habitCount = selectedItems.filter((i) => i.type === "habit").length;
-  const habitDone = selectedItems.filter(
-    (i) => i.type === "habit" && i.isCompleted,
-  ).length;
   const workoutCount = selectedItems.filter((i) => i.type === "workout").length;
   const workoutDone = selectedItems.filter(
     (i) => i.type === "workout" && i.isCompleted,
@@ -75,18 +73,10 @@ export default function Main() {
     }).start();
   }, [percentage]);
 
-  const toggleTodo = (id: string) => {
-    setTodos((prev) => ({
-      ...prev,
-      [selectedDate]: prev[selectedDate].map((item) =>
-        item.id === id ? { ...item, isCompleted: !item.isCompleted } : item,
-      ),
-    }));
-  };
-
   useEffect(() => {
+    fetchTodos(selectedDate);
     initLoad();
-  }, []);
+  }, [selectedDate]);
 
   const initLoad = async () => {
     try {
@@ -252,12 +242,6 @@ export default function Main() {
               <Text style={styles.summaryPercent}>{percentage}%</Text>
             </View>
             <View style={styles.summaryStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statIcon}>✅</Text>
-                <Text style={styles.statText}>
-                  습관 {habitDone}/{habitCount}
-                </Text>
-              </View>
               {workoutCount > 0 && (
                 <View style={styles.statItem}>
                   <Text style={styles.statIcon}>💪</Text>
@@ -289,9 +273,7 @@ export default function Main() {
           <Text style={styles.progressSub}>
             {completedCount} / {totalCount} 완료
           </Text>
-          <Text style={styles.progressSub}>
-            {habitDone} 습관, {workoutDone} 운동 완료
-          </Text>
+          <Text style={styles.progressSub}>{workoutDone} 운동 완료</Text>
         </View>
       )}
 
@@ -310,12 +292,11 @@ export default function Main() {
       </View>
 
       {totalCount > 0 ? (
-        selectedItems.map((item) => (
+        selectedItems.map((item: any) => (
           <TouchableOpacity
             key={item.id}
             style={styles.todoItem}
             activeOpacity={0.7}
-            onPress={() => toggleTodo(item.id)}
           >
             <View style={styles.todoLeft}>
               <Text style={styles.todoIcon}>{item.icon}</Text>
@@ -361,7 +342,15 @@ export default function Main() {
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyIcon}>📭</Text>
           <Text style={styles.emptyText}>이 날은 일정이 없어요</Text>
-          <TouchableOpacity style={styles.addBtn}>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() =>
+              router.push({
+                pathname: "/todo-add",
+                params: { date: selectedDate },
+              })
+            }
+          >
             <Text style={styles.addBtnText}>+ 일정 추가</Text>
           </TouchableOpacity>
         </View>

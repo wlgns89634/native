@@ -1,10 +1,10 @@
+import JugglerLoader from "@/components/common/JugglerLoader";
 import { useColors } from "@/hooks/useColors";
 import { useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { Exercise } from "@/types";
-
-import { router } from "expo-router";
-import { useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -14,7 +14,6 @@ import {
   View,
 } from "react-native";
 
-// 아이콘 선택 목록
 const ICONS = [
   "💧",
   "📚",
@@ -44,7 +43,6 @@ const DAYS = [
   { label: "일", value: 0 },
 ];
 
-// 시간 선택 목록
 const TIMES = [
   "06:00",
   "07:00",
@@ -79,42 +77,71 @@ export default function WorkAddScreen() {
   const { isDark } = useThemeStore();
   const styles = makeStyles(Colors, isDark);
 
-  const [selectedIcon, setSelectedIcon] = useState("💧");
-  const [name, setName] = useState("");
+  // ✅ id가 있으면 수정 모드, 없으면 추가 모드
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEditMode = !!id;
+
+  const { addWorkout, updateWorkout, workouts, isLoading } = useAllStore();
+
+  const existingWorkout = isEditMode ? workouts.find((w) => w.id === id) : null;
+
+  const [selectedIcon, setSelectedIcon] = useState(
+    existingWorkout?.icon ?? "💧",
+  );
+  const [name, setName] = useState(existingWorkout?.name ?? "");
   const [selectedTime, setSelectedTime] = useState("09:00");
+  const [selectedDay, setSelectedDay] = useState(
+    existingWorkout?.day ?? new Date().getDay(),
+  );
 
-  const [selectedDay, setSelectedDay] = useState(new Date().getDay());
-
-  const { addWorkout } = useAllStore();
+  // ✅ 수정 모드인데 데이터 없으면 뒤로가기
+  useEffect(() => {
+    if (isEditMode && !existingWorkout) router.back();
+  }, []);
 
   const handleSave = async () => {
     if (!name.trim()) return;
 
-    await addWorkout({
-      name: name.trim(),
-      icon: selectedIcon,
-      isCompleted: false,
-      day: selectedDay,
-    });
+    if (isEditMode) {
+      // ✅ 수정 모드
+      await updateWorkout(id, {
+        name: name.trim(),
+        icon: selectedIcon,
+        day: selectedDay,
+      });
+    } else {
+      // ✅ 추가 모드
+      await addWorkout({
+        name: name.trim(),
+        icon: selectedIcon,
+        isCompleted: false,
+        day: selectedDay,
+      });
+    }
 
     setTimeout(() => {
-      if (router.canGoBack()) {
-        router.back();
-      }
+      if (router.canGoBack()) router.back();
     }, 100);
   };
 
   return (
     <View style={styles.container}>
+      {isLoading && <JugglerLoader />}
+
       {/* 헤더 */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>운동 추가</Text>
+
+        {/* ✅ 모드에 따라 타이틀 변경 */}
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "운동 수정" : "운동 추가"}
+        </Text>
         <TouchableOpacity
           onPress={handleSave}
           style={[styles.saveBtn, !name.trim() && styles.saveBtnDisabled]}
+          disabled={!name.trim()}
         >
           <Text style={styles.saveText}>저장</Text>
         </TouchableOpacity>
@@ -150,6 +177,7 @@ export default function WorkAddScreen() {
           ))}
         </View>
 
+        {/* 요일 선택 */}
         <Text style={styles.sectionTitle}>운동 요일</Text>
         <View style={styles.dayGrid}>
           {DAYS.map((day) => (
@@ -173,13 +201,13 @@ export default function WorkAddScreen() {
           ))}
         </View>
 
-        {/* 습관 이름 */}
-        <Text style={styles.sectionTitle}>습관 이름</Text>
+        {/* 운동 이름 */}
+        <Text style={styles.sectionTitle}>운동 이름</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="예) 물 2L 마시기"
+          placeholder="예) 벤치프레스"
           placeholderTextColor={Colors.subText}
           maxLength={20}
         />
@@ -218,8 +246,6 @@ export default function WorkAddScreen() {
 const makeStyles = (Colors: any, isDark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
-
-    // 헤더
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -241,10 +267,7 @@ const makeStyles = (Colors: any, isDark: boolean) =>
     },
     saveBtnDisabled: { opacity: 0.4 },
     saveText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-
     content: { padding: 20 },
-
-    // 미리보기
     previewWrap: { alignItems: "center", marginBottom: 32 },
     previewCard: {
       backgroundColor: Colors.card,
@@ -263,8 +286,6 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       marginBottom: 4,
     },
     previewTime: { fontSize: 13, color: Colors.subText },
-
-    // 섹션 타이틀
     sectionTitle: {
       fontSize: 15,
       fontWeight: "700",
@@ -272,8 +293,6 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       marginBottom: 12,
       marginTop: 8,
     },
-
-    // 아이콘 그리드
     iconGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -295,8 +314,6 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       backgroundColor: "#6C63FF22",
     },
     iconText: { fontSize: 24 },
-
-    // 이름 입력
     input: {
       backgroundColor: Colors.card,
       borderRadius: 12,
@@ -313,8 +330,6 @@ const makeStyles = (Colors: any, isDark: boolean) =>
       textAlign: "right",
       marginBottom: 24,
     },
-
-    // 시간 그리드
     timeGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -335,16 +350,15 @@ const makeStyles = (Colors: any, isDark: boolean) =>
     },
     timeText: { fontSize: 13, color: Colors.subText, fontWeight: "500" },
     timeTextSelected: { color: "#fff", fontWeight: "700" },
-
     dayGrid: {
       flexDirection: "row",
-      justifyContent: "space-between", // 요일을 가로로 꽉 채움
+      justifyContent: "space-between",
       marginBottom: 24,
     },
     dayItem: {
       width: 40,
       height: 40,
-      borderRadius: 20, // 동그란 모양
+      borderRadius: 20,
       backgroundColor: Colors.card,
       justifyContent: "center",
       alignItems: "center",
@@ -354,21 +368,23 @@ const makeStyles = (Colors: any, isDark: boolean) =>
     dayItemSelected: {
       backgroundColor: Colors.primary,
       borderColor: Colors.primary,
-      // 그림자 효과 (iOS)
       shadowColor: Colors.primary,
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 4,
-      // 그림자 효과 (Android)
       elevation: 4,
     },
-    dayText: {
-      fontSize: 14,
-      fontWeight: "600",
-      color: Colors.subText,
-    },
-    dayTextSelected: {
-      color: "#ffffff",
-      fontWeight: "700",
+    dayText: { fontSize: 14, fontWeight: "600", color: Colors.subText },
+    dayTextSelected: { color: "#ffffff", fontWeight: "700" },
+    loadingOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0,0,0,0.4)",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 999,
     },
   });
