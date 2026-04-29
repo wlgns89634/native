@@ -1,20 +1,46 @@
+import { COLORS, TEXTS } from "@/constants/common";
 import { StyleSheet } from "react-native";
 
-export const makeStyles = (Colors: any, isDark: boolean) =>
+export const makeStyles = (Colors: typeof COLORS, isDark: boolean) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     content: { padding: 20 },
 
     // 헤더
-    header: {
+    today_weather: {
       flexDirection: "row",
-      justifyContent: "space-between",
       alignItems: "center",
-      marginBottom: 20,
-      marginTop: 8,
+      gap: 6,
+    },
+    weatherBox: {
+      flex: 1,
+      width: "100%",
+      backgroundColor: Colors.card,
+      borderRadius: 12,
+      padding: 20,
+    },
+    weatherBoxText: {
+      color: Colors.text,
+      fontSize: 14,
+      fontWeight: "400",
+      flexShrink: 1,
+    },
+
+    weatherBigFont: {
+      fontSize: TEXTS.title,
+      fontWeight: "700",
+      color: Colors.text,
+    },
+
+    today_text: {
+      flexDirection: "row",
+      gap: 3,
+      fontSize: 14,
+      color: Colors.subText,
     },
     dateText: { fontSize: 13, color: Colors.subText, marginBottom: 4 },
     greetingText: { fontSize: 22, fontWeight: "700", color: Colors.text },
+
     streakBadge: {
       backgroundColor: Colors.card,
       borderRadius: 12,
@@ -100,6 +126,7 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
     },
     todoLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
     todoIcon: { fontSize: 22 },
+    todoTime: { fontSize: 12, color: Colors.subText },
     todoName: {
       fontSize: 15,
       fontWeight: "500",
@@ -113,7 +140,6 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       paddingVertical: 2,
       alignSelf: "flex-start",
     },
-    typeBadgeText: { fontSize: 11, fontWeight: "600" },
 
     motivationWrap: {
       flexDirection: "row",
@@ -190,23 +216,5 @@ export const makeStyles = (Colors: any, isDark: boolean) =>
       borderWidth: 1,
       borderColor: "#00BFFF",
       borderRadius: 8,
-    },
-
-    weatherWarning: {
-      backgroundColor: "#1E3A5F",
-      borderRadius: 12,
-      padding: 14,
-      marginHorizontal: 16,
-      marginTop: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      borderLeftWidth: 4,
-      borderLeftColor: "#4A9EFF",
-    },
-    weatherWarningText: {
-      color: "#AED6FF",
-      fontSize: 14,
-      fontWeight: "500",
-      flexShrink: 1,
     },
   });

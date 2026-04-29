@@ -185,6 +185,19 @@ export const CITY_NAMES_KR: Record<string, string> = {
   Seogwipo: "서귀포",
 };
 
+export const TEXTS = {
+  base: 14,
+  title: 22,
+  subTitle: 18,
+};
+
+export const FONTS = {
+  light: "Pretendard-Light",
+  regular: "Pretendard-Regular",
+  medium: "Pretendard-Medium",
+  bold: "Pretendard-Bold",
+};
+
 export const COLORS = {
   primary: "#6C63FF", // 메인 보라색
   secondary: "#FF6584", // 포인트 핑크
@@ -200,7 +213,7 @@ export const DARK_COLORS = {
   primary: "#6C63FF",
   secondary: "#FF6584",
   background: "#0F0F0F",
-  card: "#1E1E1E",
+  card: "#1f1f1f",
   text: "#FFFFFF",
   subText: "#888888",
   success: "#4CAF50",
@@ -258,13 +271,45 @@ export const WEATHER_WARNINGS = [
   {
     min: 200,
     max: 300,
-    msg: "⛈ 천둥번개가 치고 있어요! 오늘 실외 운동은 무리예요",
+    msg: "천둥번개가 치고 있어요! 오늘 실외 운동은 무리예요",
+    lottie: require("@/assets/lottie/storm.json"),
   },
-  { min: 300, max: 400, msg: "🌦 이슬비가 내려요. 실내 운동을 추천해요" },
-  { min: 500, max: 600, msg: "🌧 비가 오고 있어요. 운동하기 힘들겠는데요?" },
-  { min: 600, max: 700, msg: "❄️ 눈이 오고 있어요. 운동하기 힘들겠는데요?" },
-  { min: 700, max: 800, msg: "🌫 미세먼지/안개가 심해요. 마스크 챙기세요!" },
-  { min: 801, max: 805, msg: "☁️ 흐린 날씨예요. 야외 운동 시 주의하세요" },
+  {
+    min: 300,
+    max: 400,
+    msg: "이슬비가 내려요. 실내 운동을 추천해요",
+    lottie: require("@/assets/lottie/shower.json"),
+  },
+  {
+    min: 500,
+    max: 600,
+    msg: "비가 오고 있어요. 운동하기 힘들겠는데요?",
+    lottie: require("@/assets/lottie/rain.json"),
+  },
+  {
+    min: 600,
+    max: 700,
+    msg: "눈이 오고 있어요. 운동하기 힘들겠는데요?",
+    lottie: require("@/assets/lottie/snow.json"),
+  },
+  {
+    min: 700,
+    max: 800,
+    msg: "미세먼지/안개가 심해요. 마스크 챙기세요!",
+    lottie: require("@/assets/lottie/rain.json"),
+  },
+  {
+    min: 800,
+    max: 801,
+    msg: "맑은 날씨예요! 오늘 운동하기 딱 좋아요",
+    lottie: require("@/assets/lottie/sunny.json"),
+  },
+  {
+    min: 801,
+    max: 805,
+    msg: "흐린 날씨예요. 야외 운동 시 주의하세요",
+    lottie: require("@/assets/lottie/cloud.json"),
+  },
 ];
 
 export const getWeatherWarning = (weatherId: number | undefined) => {
@@ -272,5 +317,13 @@ export const getWeatherWarning = (weatherId: number | undefined) => {
   return (
     WEATHER_WARNINGS.find((w) => weatherId >= w.min && weatherId < w.max)
       ?.msg ?? null
+  );
+};
+
+export const getWeatherLottie = (weatherId: number | undefined) => {
+  if (!weatherId) return null;
+  return (
+    WEATHER_WARNINGS.find((w) => weatherId >= w.min && weatherId < w.max)
+      ?.lottie ?? null
   );
 };

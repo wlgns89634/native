@@ -16,14 +16,8 @@ export default function HabitScreen() {
   const { isDark } = useThemeStore();
   const styles = CommonStyles(Colors, isDark);
 
-  const {
-    habits,
-    fetchHabits,
-    toggleHabit,
-    deleteHabit,
-    isSkeleton,
-    isLoading,
-  } = useAllStore();
+  const { habits, fetchHabits, deleteHabit, isSkeleton, isLoading } =
+    useAllStore();
 
   useEffect(() => {
     fetchHabits();
@@ -35,7 +29,7 @@ export default function HabitScreen() {
     <View style={styles.rightActionWrap}>
       <TouchableOpacity
         style={styles.editAction}
-        onPress={() => router.push({ pathname: "/habit-add", params: { id } })} // id만 사용
+        onPress={() => router.push({ pathname: "/habit-add", params: { id } })}
       >
         <Text style={styles.editText}>수정</Text>
       </TouchableOpacity>
@@ -88,14 +82,12 @@ export default function HabitScreen() {
                   enableTrackpadTwoFingerGesture
                   rightThreshold={40}
                 >
-                  <TouchableOpacity
+                  <View
                     key={habit.id}
                     style={[
                       styles.commonCard,
                       habit.isCompleted && styles.habitCardDone,
                     ]}
-                    activeOpacity={0.7}
-                    onPress={() => toggleHabit(habit.id, habit.isCompleted)}
                   >
                     {/* 왼쪽 정보 */}
                     <View style={styles.habitLeft}>
@@ -126,7 +118,7 @@ export default function HabitScreen() {
                         </View>
                       </View>
                     </View>
-                  </TouchableOpacity>
+                  </View>
                 </Swipeable>
               ))
             ) : (

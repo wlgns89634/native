@@ -87,7 +87,6 @@ interface AllStore {
     id: string,
     updates: Partial<Omit<Habit, "id" | "createdAt">>,
   ) => Promise<void>;
-  toggleHabit: (id: string, current: boolean) => Promise<void>;
 
   workouts: Workout[];
   fetchWorkouts: () => Promise<void>;
@@ -217,42 +216,30 @@ export const useAllStore = create<AllStore>((set, get) => ({
     }
   },
 
-  toggleHabit: async (id, current) => {
-    try {
-      const { error } = await supabase
-        .from("habits")
-        .update({ isCompleted: !current })
-        .eq("id", id);
-
-      if (error) throw error;
-      set((state) => ({
-        habits: state.habits.map((h) =>
-          h.id === id ? { ...h, isCompleted: !current } : h,
-        ),
-      }));
-    } catch (error) {
-      console.error("습관 토글 중 오류:", error);
-    }
-  },
-
   // --- [운동(Workout) 관련 로직] ---
 
   fetchWorkouts: async () => {
     set({ isSkeleton: true });
+
     const { year, week } = getDateInfo();
+    const targetYear = Number(year);
+    const targetWeek = Number(week);
 
     try {
       const { data, error } = await supabase
         .from("workouts")
-        .select(`*, exercises(*)`)
-        .eq("year", year)
-        .eq("week", week)
+        .select("*")
+        .eq("year", targetYear)
+        .eq("week", targetWeek)
+        .order("day", { ascending: true })
         .order("createdAt", { ascending: true });
 
       if (error) throw error;
+
       set({ workouts: data || [] });
     } catch (error) {
       console.error("운동 페칭 중 오류:", error);
+      set({ workouts: [] });
     } finally {
       set({ isSkeleton: false });
     }

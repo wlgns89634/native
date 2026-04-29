@@ -69,3 +69,8 @@ export const getMatchDetail = async (matchId: string) => {
   const { data } = await asiaApi.get(`/lol/match/v5/matches/${matchId}`);
   return data;
 };
+
+export const getRankByPuuid = async (puuid: string) => {
+  const { data } = await krApi.get(`/lol/league/v4/entries/by-puuid/${puuid}`);
+  return data;
+};
