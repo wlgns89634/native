@@ -1,11 +1,30 @@
+import { COLORS } from "@/constants/common";
 import { StyleSheet } from "react-native";
 
-export const CommonStyles = (Colors: any, isDark: boolean) =>
+export const CommonStyles = (Colors: typeof COLORS, isDark: boolean) =>
   StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
-    content: { padding: 20 },
+    container: {
+      flex: 1,
+      backgroundColor: Colors.background,
+      flexDirection: "column",
+      gap: 20,
+      padding: 20,
+    },
 
-    // 헤더
+    boxFlex: {
+      flexDirection: "column",
+      gap: 20,
+    },
+
+    center: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: Colors.background,
+      padding: 20,
+    },
+
+    // ── 헤더 ──────────────────────────────────────────
     header: {
       flexDirection: "row",
       justifyContent: "space-between",
@@ -28,8 +47,6 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       borderRadius: 12,
       paddingHorizontal: 14,
       paddingVertical: 8,
-      borderWidth: 1,
-      borderColor: Colors.border,
     },
     countText: {
       fontSize: 22,
@@ -42,7 +59,36 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       color: Colors.subText,
     },
 
-    // 달성률 바
+    // ── 텍스트 공통 ───────────────────────────────────
+    dateText: {
+      fontSize: 13,
+      color: Colors.subText,
+      marginBottom: 4,
+    },
+    greetingText: {
+      fontSize: 22,
+      fontWeight: "700",
+      color: Colors.text,
+    },
+    subTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: Colors.text,
+    },
+    errorText: {
+      color: "#ff4d4d",
+      fontSize: 15,
+      textAlign: "center",
+    },
+
+    // ── 카드 공통 ─────────────────────────────────────
+    card: {
+      backgroundColor: Colors.card,
+      borderRadius: 16,
+      padding: 20,
+    },
+
+    // ── 달성률 바 ─────────────────────────────────────
     progressWrap: {
       flexDirection: "row",
       alignItems: "center",
@@ -68,27 +114,12 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       width: 36,
       textAlign: "right",
     },
+    progressSub: {
+      fontSize: 12,
+      color: Colors.subText,
+    },
 
-    // 공통 카드
-    commonCard: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      backgroundColor: Colors.card,
-      borderRadius: 14,
-      padding: 16,
-      marginBottom: 10,
-      borderWidth: 1,
-      borderColor: Colors.border,
-    },
-    habitCardDone: {
-      opacity: 0.6,
-    },
-    habitLeft: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 14,
-    },
+    // ── 아이콘 래퍼 ───────────────────────────────────
     iconWrap: {
       width: 46,
       height: 46,
@@ -99,6 +130,161 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
     },
     iconWrapDone: {
       backgroundColor: "#6C63FF22",
+    },
+
+    // ── 체크박스 ──────────────────────────────────────
+    checkboxWrap: {
+      padding: 4,
+      justifyContent: "center",
+      alignItems: "center",
+      marginLeft: 10,
+    },
+    checkbox: {
+      width: 26,
+      height: 26,
+      borderRadius: 8,
+      borderWidth: 2,
+      borderColor: Colors.border,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    checkboxDone: {
+      backgroundColor: Colors.primary,
+      borderColor: Colors.primary,
+    },
+    checkmark: {
+      color: "#fff",
+      fontSize: 14,
+      fontWeight: "700",
+    },
+
+    // ── 빈 화면 ───────────────────────────────────────
+    emptyWrap: {
+      alignItems: "center",
+      paddingVertical: 80,
+    },
+    emptyIcon: {
+      fontSize: 56,
+      marginBottom: 16,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: Colors.text,
+      marginBottom: 8,
+    },
+    emptyText: {
+      fontSize: 14,
+      color: Colors.subText,
+      textAlign: "center",
+    },
+
+    // ── 플로팅 버튼 ───────────────────────────────────
+    fab: {
+      position: "absolute",
+      bottom: 24,
+      right: 24,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: Colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      shadowColor: Colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.4,
+      shadowRadius: 8,
+      elevation: 8,
+      zIndex: 999,
+    },
+    fabText: {
+      color: "#fff",
+      fontSize: 28,
+      fontWeight: "300",
+      lineHeight: 32,
+    },
+
+    // ── 버튼 공통 ─────────────────────────────────────
+    addBtn: {
+      backgroundColor: Colors.primary,
+      borderRadius: 10,
+      paddingHorizontal: 20,
+      paddingVertical: 10,
+    },
+    addBtnText: {
+      color: "#fff",
+      fontWeight: "600",
+      fontSize: 14,
+    },
+    retryBtn: {
+      marginTop: 14,
+      paddingVertical: 8,
+      paddingHorizontal: 20,
+      borderWidth: 1,
+      borderColor: Colors.primary,
+      borderRadius: 8,
+    },
+
+    // ── 스와이프 액션 ─────────────────────────────────
+    rightActionWrap: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    editAction: {
+      backgroundColor: Colors.primary,
+      justifyContent: "center",
+      alignItems: "center",
+      width: 70,
+      borderRadius: 12,
+      marginRight: 6,
+      marginBottom: 10,
+      alignSelf: "stretch",
+    },
+    editText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    deleteAction: {
+      backgroundColor: Colors.secondary || "#FF5252",
+      justifyContent: "center",
+      alignItems: "center",
+      width: 70,
+      borderRadius: 12,
+      marginBottom: 10,
+      alignSelf: "stretch",
+    },
+    deleteText: {
+      color: "#FFFFFF",
+      fontSize: 14,
+      fontWeight: "600",
+    },
+
+    // ── 섹션 헤더 ─────────────────────────────────────
+    sectionHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 12,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: Colors.text,
+    },
+    sectionMore: {
+      fontSize: 13,
+      color: Colors.primary,
+    },
+
+    // ── 습관 카드 ─────────────────────────────────────
+    habitCardDone: {
+      opacity: 0.6,
+    },
+    habitLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
     },
     habitIcon: { fontSize: 22 },
     habitName: {
@@ -126,120 +312,7 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       fontWeight: "600",
     },
 
-    // 체크박스
-    checkboxWrap: {
-      padding: 4,
-      justifyContent: "center",
-      alignItems: "center",
-      marginLeft: 10, // 카드 텍스트와 너무 붙지 않게 여유 공간
-    },
-    checkbox: {
-      width: 26,
-      height: 26,
-      borderRadius: 8,
-      borderWidth: 2,
-      borderColor: Colors.border,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-    checkboxDone: {
-      backgroundColor: Colors.primary,
-      borderColor: Colors.primary,
-    },
-
-    checkmark: {
-      color: "#fff",
-      fontSize: 14,
-      fontWeight: "700",
-    },
-
-    // 빈 화면
-    emptyWrap: {
-      alignItems: "center",
-      paddingVertical: 80,
-    },
-    emptyIcon: { fontSize: 56, marginBottom: 16 },
-    emptyTitle: {
-      fontSize: 18,
-      fontWeight: "700",
-      color: Colors.text,
-      marginBottom: 8,
-    },
-    emptyText: {
-      fontSize: 14,
-      color: Colors.subText,
-      textAlign: "center",
-    },
-
-    // 플로팅 버튼
-    fab: {
-      position: "absolute",
-      bottom: 24,
-      right: 24,
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: Colors.primary,
-      justifyContent: "center",
-      alignItems: "center",
-      shadowColor: Colors.primary,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.4,
-      shadowRadius: 8,
-      elevation: 8,
-      zIndex: 999,
-    },
-    fabText: {
-      color: "#fff",
-      fontSize: 28,
-      fontWeight: "300",
-      lineHeight: 32,
-    },
-
-    rightActionWrap: {
-      flexDirection: "row",
-      alignItems: "center",
-    },
-
-    // 수정 버튼
-    editAction: {
-      backgroundColor: Colors.primary,
-      justifyContent: "center",
-      alignItems: "center",
-      width: 70,
-      borderRadius: 12,
-      marginRight: 6,
-      marginBottom: 10,
-      alignSelf: "stretch",
-    },
-    editText: {
-      color: "#FFFFFF",
-      fontSize: 14,
-      fontWeight: "600",
-    },
-
-    // 삭제 버튼
-    deleteAction: {
-      backgroundColor: Colors.error || "#FF5252",
-      justifyContent: "center",
-      alignItems: "center",
-      width: 70,
-      borderRadius: 12,
-      marginBottom: 10,
-      alignSelf: "stretch",
-    },
-    deleteText: {
-      color: "#FFFFFF",
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    swipeContainer: {
-      overflow: "visible",
-    },
-
-    // ── 운동(Workout) 전용 ──────────────────────────
-
-    // 루틴 카드
+    // ── 운동 카드 ─────────────────────────────────────
     workoutCard: {
       backgroundColor: Colors.card,
       borderRadius: 14,
@@ -284,8 +357,6 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       gap: 10,
     },
     expandIcon: { fontSize: 10, color: Colors.subText },
-
-    // 종목 리스트
     exerciseList: { paddingHorizontal: 16, paddingBottom: 16 },
     exerciseDivider: {
       height: 1,
@@ -319,5 +390,45 @@ export const CommonStyles = (Colors: any, isDark: boolean) =>
       fontSize: 14,
       color: Colors.subText,
       textAlign: "center",
+    },
+
+    // ── 할 일 아이템 ──────────────────────────────────
+    todoItem: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      backgroundColor: Colors.card,
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: Colors.border,
+    },
+    todoLeft: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    todoIcon: { fontSize: 22 },
+    todoTime: { fontSize: 12, color: Colors.subText },
+    todoName: {
+      fontSize: 15,
+      fontWeight: "500",
+      color: Colors.text,
+      marginBottom: 4,
+    },
+    todoDone: {
+      textDecorationLine: "line-through",
+      color: Colors.subText,
+    },
+    typeBadge: {
+      borderRadius: 4,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      alignSelf: "flex-start",
+    },
+    typeBadgeText: {
+      fontSize: 11,
+      fontWeight: "600",
     },
   });

@@ -201,7 +201,7 @@ export const FONTS = {
 export const COLORS = {
   primary: "#6C63FF", // 메인 보라색
   secondary: "#FF6584", // 포인트 핑크
-  background: "#0F0F0F", // 다크 배경
+  background: "#F2F2F2", // 다크 배경
   card: "#1E1E1E", // 카드 배경
   text: "#FFFFFF", // 텍스트
   subText: "#888888", // 서브 텍스트
@@ -223,8 +223,8 @@ export const DARK_COLORS = {
 export const LIGHT_COLORS = {
   primary: "#6C63FF",
   secondary: "#FF6584",
-  background: "#FFFFFF",
-  card: "#F5F5F5",
+  background: "#F2F2F2",
+  card: "#FFFFFF",
   text: "#000000",
   subText: "#666666",
   success: "#4CAF50",
@@ -326,4 +326,15 @@ export const getWeatherLottie = (weatherId: number | undefined) => {
     WEATHER_WARNINGS.find((w) => weatherId >= w.min && weatherId < w.max)
       ?.lottie ?? null
   );
+};
+
+export const getGameModeKr = (mode: string) => {
+  const modes: Record<string, string> = {
+    CLASSIC: "솔로랭크",
+    ARAM: "칼바람",
+    URF: "URF",
+    CHERRY: "아레나",
+    NEXUSBLITZ: "넥서스 블리츠",
+  };
+  return modes[mode] ?? mode;
 };

@@ -3,6 +3,7 @@ import {
   CITY_NAMES_KR,
   COUNTRY_NAMES,
   DAY_NAMES,
+  getGameModeKr,
   getMotivation,
   getWeatherLottie,
   getWeatherWarning,
@@ -12,7 +13,7 @@ import * as RiotApi from "@/lib/riot";
 import { Todo, useAllStore } from "@/store/useAllStore";
 import { useThemeStore } from "@/store/useThemeStore";
 import { CommonStyles } from "@/styles/common.style";
-import { makeStyles } from "@/styles/main.style";
+import { MakeStyles } from "@/styles/main.style";
 
 import JugglerLoader from "@/components/common/JugglerLoader";
 import axios from "axios";
@@ -46,11 +47,12 @@ const todayStr = today.toISOString().split("T")[0];
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.5;
 const CLOSE_THRESHOLD = 80;
+const DDV = "14.24.1"; // Data Dragon 버전
 
 export default function Main() {
   const Colors = useColors();
   const { isDark } = useThemeStore();
-  const styles = makeStyles(Colors, isDark);
+  const styles = MakeStyles(Colors, isDark);
   const cmStyles = CommonStyles(Colors, isDark);
 
   const [selectedDate, setSelectedDate] = useState(todayStr);
@@ -117,6 +119,41 @@ export default function Main() {
     selectedColor: Colors.primary,
   };
 
+  // 티어 순서
+  const TIER_ORDER = [
+    "IRON",
+    "BRONZE",
+    "SILVER",
+    "GOLD",
+    "PLATINUM",
+    "EMERALD",
+    "DIAMOND",
+    "MASTER",
+  ];
+  const RANK_ORDER = ["IV", "III", "II", "I"]; // IV가 낮고 I이 높음
+
+  // 현재 위치를 점수로 변환 (각 단계 = 100LP)
+  const getTotalLP = (tier: string, rank: string, lp: number) => {
+    const tierIndex = TIER_ORDER.indexOf(tier);
+    const rankIndex = RANK_ORDER.indexOf(rank);
+    return tierIndex * 400 + rankIndex * 100 + lp;
+  };
+
+  // 다음 티어 1단계까지 총 LP
+  const getNextTierLP = (tier: string) => {
+    const nextTierIndex = TIER_ORDER.indexOf(tier) + 1;
+    return nextTierIndex * 400; // 다음 티어 IV 0LP
+  };
+
+  // 퍼센트 계산
+  const currentLP = getTotalLP("PLATINUM", "II", 67); // 1667
+  const tierStartLP = getTotalLP("PLATINUM", "IV", 0); // 1600
+  const nextTierLP = getNextTierLP("PLATINUM"); // 2000
+  const rankpercentage = Math.round(
+    ((currentLP - tierStartLP) / (nextTierLP - tierStartLP)) * 100,
+  );
+  // → 16.75% → 17%
+
   useEffect(() => {
     Animated.timing(animatedWidth, {
       toValue: percentage,
@@ -165,7 +202,7 @@ export default function Main() {
   const closeSheet = () => {
     Animated.timing(sheetBaseY, {
       toValue: SHEET_HEIGHT,
-      duration: 280,
+      duration: 100,
       useNativeDriver: true,
     }).start(() => {
       dragY.setValue(0);
@@ -183,8 +220,8 @@ export default function Main() {
   }: PanGestureHandlerGestureEvent) => {
     if (nativeEvent.state === State.END) {
       if (
-        (nativeEvent as any).translationY > CLOSE_THRESHOLD ||
-        (nativeEvent as any).velocityY > 800
+        nativeEvent.translationY > CLOSE_THRESHOLD ||
+        nativeEvent.velocityY > 800
       ) {
         closeSheet();
       } else {
@@ -230,39 +267,51 @@ export default function Main() {
       const position = await Location.getCurrentPositionAsync({});
       const { latitude, longitude } = position.coords;
 
-      const [weatherResponse, account] = await Promise.all([
+      const [weatherResponse, forecastResponse, account] = await Promise.all([
         axios.get(
           `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${WEATHER_KEY}&units=metric&lang=kr`,
+        ),
+        axios.get(
+          `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${WEATHER_KEY}&units=metric&lang=kr`,
         ),
         RiotApi.getPuuid(),
       ]);
 
       if (!account?.puuid) throw new Error("PUUID를 가져오지 못했습니다.");
 
-      // ✅ summoner + matchIds 병렬 조회
-      const [summoner, matchIds] = await Promise.all([
+      const [summoner, matchIds, championData] = await Promise.all([
         RiotApi.getSummoner(account.puuid),
         RiotApi.getMatches(account.puuid),
+        RiotApi.getChampionData(),
       ]);
 
-      // ✅ 랭크는 puuid로 직접 조회
       const soloRankData = await RiotApi.getRankByPuuid(account.puuid);
       const soloRank =
         soloRankData?.find((r: any) => r.queueType === "RANKED_SOLO_5x5") ??
         null;
 
-      // ✅ 매치 상세 병렬 조회
       const matchDetails = await Promise.all(
         matchIds.slice(0, 5).map((id: string) => RiotApi.getMatchDetail(id)),
+      );
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split("T")[0];
+
+      const todayForecast = forecastResponse.data.list.filter(
+        (f: any) =>
+          f.dt_txt.startsWith(todayStr) || f.dt_txt.startsWith(tomorrowStr),
       );
 
       setUserData({
         account,
         summoner: summoner.profileIconId,
         summonerLevel: summoner.summonerLevel,
+        championData,
         rank: soloRank,
         matches: matchDetails,
         weather: weatherResponse.data,
+        forecast: todayForecast,
       });
     } catch (e) {
       console.error("=== ❌ 에러 발생 ===", e);
@@ -321,11 +370,10 @@ export default function Main() {
     );
   }
 
-  // ✅ ScrollView 안의 모든 내용을 ListHeaderComponent로 분리
   const ListHeader = () => (
-    <View style={{ padding: 20 }}>
+    <View style={CommonStyles(Colors, isDark).boxFlex}>
       {/* 날씨 헤더 */}
-      <View style={styles.weatherBox}>
+      <View style={CommonStyles(Colors, isDark).card}>
         <View style={styles.today_text}>
           <Text style={styles.weatherBoxText}>
             {today.getFullYear()}년 {today.getMonth() + 1}월 {today.getDate()}일{" "}
@@ -357,6 +405,7 @@ export default function Main() {
             </Text>
             <Text style={styles.weatherBoxText}>
               {userData.weather?.weather[0]?.description}
+              {userData.weather?.main.humidity}% 습도
             </Text>
             <Text style={styles.weatherBoxText}>
               {Math.round(userData.weather?.main?.temp)}°C
@@ -365,6 +414,63 @@ export default function Main() {
         </View>
         {weatherWarning && (
           <Text style={styles.weatherBoxText}>{weatherWarning}</Text>
+        )}
+
+        {/* ✅ 시간대별 예보 가로 스크롤 */}
+        {userData.forecast.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginTop: 16 }}
+            contentContainerStyle={{ gap: 12 }}
+          >
+            {userData.forecast.map((item: any) => (
+              <View
+                key={item.dt}
+                style={{
+                  alignItems: "center",
+                  backgroundColor: Colors.background,
+                  borderRadius: 12,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  minWidth: 60,
+                  gap: 4,
+                }}
+              >
+                {/* 시간 */}
+                <Text
+                  style={{
+                    color: Colors.subText,
+                    fontSize: 12,
+                    fontWeight: "600",
+                  }}
+                >
+                  {item.dt_txt.split(" ")[1].slice(0, 5)}
+                </Text>
+                {/* 날씨 아이콘 */}
+                <Image
+                  source={{
+                    uri: `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`,
+                  }}
+                  style={{ width: 36, height: 36 }}
+                />
+                {/* 기온 */}
+                <Text
+                  style={{
+                    color: Colors.text,
+                    fontSize: 14,
+                    fontWeight: "700",
+                  }}
+                >
+                  {Math.round(item.main.temp)}°
+                </Text>
+                {/* 강수 확률 */}
+                <Text style={{ color: "#4A9EFF", fontSize: 11 }}>
+                  💧{Math.round((item.pop ?? 0) * 100)}%
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
         )}
       </View>
 
@@ -386,8 +492,7 @@ export default function Main() {
           )}
           markedDates={markedDates}
           theme={{
-            backgroundColor: Colors.card,
-            calendarBackground: Colors.card,
+            backgroundColor: CommonStyles(Colors, isDark).card.backgroundColor,
             textSectionTitleColor: Colors.subText,
             selectedDayBackgroundColor: Colors.primary,
             selectedDayTextColor: "#ffffff",
@@ -407,10 +512,136 @@ export default function Main() {
         />
       </View>
 
+      <View style={cmStyles.card}>
+        <View style={cmStyles.sectionHeader}>
+          <Text style={cmStyles.sectionTitle}>
+            {today.getMonth() + 1}월 일정
+          </Text>
+          <Text style={{ fontSize: 12, color: Colors.subText }}>
+            총 {allTodos.length}개
+          </Text>
+        </View>
+
+        {allTodos.length > 0 ? (
+          Object.entries(
+            allTodos.reduce((acc: Record<string, Todo[]>, todo) => {
+              if (!acc[todo.date]) acc[todo.date] = [];
+              acc[todo.date].push(todo);
+              return acc;
+            }, {}),
+          )
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, items]) => (
+              <View key={date}>
+                {/* 날짜 헤더 */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedDate(date);
+                    fetchTodos(date);
+                    openSheet();
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: Colors.primary,
+                    }}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      fontWeight: "700",
+                      color: Colors.primary,
+                    }}
+                  >
+                    {formatDisplayDate(date)}
+                  </Text>
+                  <Text style={{ fontSize: 11, color: Colors.subText }}>
+                    {(items as Todo[]).length}개
+                  </Text>
+                </TouchableOpacity>
+
+                {/* 해당 날짜 일정들 */}
+                {(items as Todo[]).map((item) => (
+                  <View
+                    key={item.id}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: Colors.card,
+                      borderRadius: 10,
+                      padding: 12,
+                      marginBottom: 6,
+                      marginLeft: 16,
+                      borderWidth: 1,
+                      borderColor: Colors.border,
+                      opacity: (item as any).isCompleted ? 0.5 : 1,
+                    }}
+                  >
+                    <Text style={{ fontSize: 16, marginRight: 10 }}>
+                      {(item as any).icon ?? "📅"}
+                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: "600",
+                          color: Colors.text,
+                          textDecorationLine: (item as any).isCompleted
+                            ? "line-through"
+                            : "none",
+                        }}
+                      >
+                        {item.title}
+                      </Text>
+                      {item.time ? (
+                        <Text style={{ fontSize: 12, color: Colors.subText }}>
+                          🕐 {item.time}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {(item as any).isCompleted && (
+                      <Text style={{ fontSize: 12, color: Colors.primary }}>
+                        ✓
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            ))
+        ) : (
+          <View
+            style={{
+              alignItems: "center",
+              paddingVertical: 32,
+              backgroundColor: Colors.card,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: Colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 28, marginBottom: 8 }}>📭</Text>
+            <Text style={{ fontSize: 13, color: Colors.subText }}>
+              {today.getMonth() + 1}월 일정이 없어요
+            </Text>
+          </View>
+        )}
+      </View>
+
       {/* 요약 카드 */}
       {totalCount >= 0 && (
         <View style={styles.summaryCard}>
-          <Text style={styles.greetingText}>오늘도 루틴 지켜봐요 💪</Text>
+          <Text style={CommonStyles(Colors, isDark).greetingText}>
+            오늘도 루틴 지켜봐요 💪
+          </Text>
           <View style={styles.summaryTop}>
             <View>
               <Text style={styles.summaryLabel}>
@@ -465,18 +696,17 @@ export default function Main() {
             <Text style={styles.motivationEmoji}>{motivation.emoji}</Text>
             <Text style={styles.motivationText}>{motivation.msg}</Text>
           </View>
-          <Text style={styles.progressSub}>
+          <Text style={CommonStyles(Colors, isDark).progressSub}>
             {completedCount} / {totalCount} 완료
           </Text>
         </View>
       )}
 
       {/* 롤 프로필 */}
-      <View style={{ height: 20 }} />
       <View style={styles.profileCard}>
         <Image
           source={{
-            uri: `https://ddragon.leagueoflegends.com/cdn/14.6.1/img/profileicon/${userData.summoner}.png`,
+            uri: `https://ddragon.leagueoflegends.com/cdn/${DDV}/img/profileicon/${userData.summoner}.png`,
           }}
           style={styles.avatar}
         />
@@ -493,10 +723,27 @@ export default function Main() {
         </View>
       </View>
 
-      <Text style={styles.subTitle}>최근 {userData.matches.length}경기</Text>
+      <Text
+        style={[CommonStyles(Colors, isDark).subTitle, { marginBottom: 20 }]}
+      >
+        최근 {userData.matches.length}경기
+      </Text>
+
+      <Text>EMERALD까지 {100 - rankpercentage}% 남음</Text>
+      <View
+        style={{ height: 8, backgroundColor: Colors.border, borderRadius: 4 }}
+      >
+        <View
+          style={{
+            width: `${rankpercentage}%`,
+            height: 8,
+            backgroundColor: "#40E0D0",
+          }}
+        />
+      </View>
 
       {userData.matches.length === 0 && (
-        <Text style={{ color: "#777", textAlign: "center", marginTop: 20 }}>
+        <Text style={CommonStyles(Colors, isDark).errorText}>
           최근 경기 기록이 없습니다.
         </Text>
       )}
@@ -504,55 +751,116 @@ export default function Main() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={CommonStyles(Colors, isDark).container}>
       {isLoading && <JugglerLoader />}
 
       <FlatList
         data={userData.matches}
         keyExtractor={(item) => item.metadata.matchId}
         ListHeaderComponent={<ListHeader />}
-        ListFooterComponent={<View style={{ height: 40 }} />}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const me = item.info.participants.find(
-            (p: any) => p.puuid === userData.account.puuid,
+            (p: { puuid: string }) => p.puuid === userData.account.puuid,
           );
           const win = me?.win;
+
+          const krName =
+            userData.championData?.[me?.championName]?.name ??
+            me?.championName ??
+            "";
+
+          const cs =
+            (me?.totalMinionsKilled ?? 0) + (me?.neutralMinionsKilled ?? 0);
+
+          const duration = Math.floor(item.info.gameDuration / 60);
+
+          const kda =
+            me?.deaths === 0
+              ? "Perfect"
+              : (((me?.kills ?? 0) + (me?.assists ?? 0)) / me?.deaths).toFixed(
+                  2,
+                );
+
           return (
-            <View style={{ paddingHorizontal: 20 }}>
+            <>
               <View
                 style={[
                   styles.matchCard,
                   {
                     borderLeftColor: win ? "#1a9e5c" : "#c0392b",
                     borderLeftWidth: 4,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
                   },
                 ]}
               >
-                <View>
-                  <Text style={styles.matchMode}>{item.info.gameMode}</Text>
-                  <Text style={styles.matchStatus}>
-                    {me?.championName ?? ""}
+                {/* 챔피언 이미지 */}
+                <Image
+                  source={{
+                    uri: `https://ddragon.leagueoflegends.com/cdn/${DDV}/img/champion/${me?.championName}.png`,
+                  }}
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    borderWidth: 2,
+                    borderColor: win ? "#1a9e5c" : "#c0392b",
+                  }}
+                />
+
+                {/* 챔피언 이름 + 게임 모드 */}
+                <View style={styles.champBox}>
+                  <Text
+                    style={{
+                      color: Colors.text,
+                      fontWeight: "700",
+                      fontSize: 15,
+                    }}
+                  >
+                    {krName}
+                  </Text>
+                  <Text style={{ color: Colors.subText, fontSize: 12 }}>
+                    {getGameModeKr(item.info.gameMode)} · {duration}분
+                  </Text>
+                  <Text
+                    style={{
+                      color: Colors.subText,
+                      fontSize: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    CS {cs}
                   </Text>
                 </View>
+
+                {/* KDA + 승패 */}
                 <View style={{ alignItems: "flex-end" }}>
                   <Text
-                    style={[
-                      styles.matchStatus,
-                      {
-                        color: win ? "#1a9e5c" : "#c0392b",
-                        fontWeight: "bold",
-                      },
-                    ]}
+                    style={{
+                      color: win ? "#1a9e5c" : "#c0392b",
+                      fontWeight: "800",
+                      fontSize: 15,
+                    }}
                   >
                     {win ? "승리" : "패배"}
                   </Text>
-                  <Text style={styles.matchStatus}>
-                    {me ? `${me.kills}/${me.deaths}/${me.assists}` : ""}
+                  <Text
+                    style={{
+                      color: Colors.text,
+                      fontWeight: "600",
+                      fontSize: 14,
+                    }}
+                  >
+                    {me?.kills ?? 0}/{me?.deaths ?? 0}/{me?.assists ?? 0}
+                  </Text>
+                  <Text style={{ color: Colors.subText, fontSize: 12 }}>
+                    KDA {kda}
                   </Text>
                 </View>
               </View>
-            </View>
+            </>
           );
         }}
       />

@@ -74,3 +74,11 @@ export const getRankByPuuid = async (puuid: string) => {
   const { data } = await krApi.get(`/lol/league/v4/entries/by-puuid/${puuid}`);
   return data;
 };
+
+export const getChampionData = async () => {
+  const { data } = await axios.get(
+    "https://ddragon.leagueoflegends.com/cdn/14.24.1/data/ko_KR/champion.json",
+  );
+  // { Ahri: { name: "아리" }, Jinx: { name: "징크스" } ... }
+  return data.data;
+};
